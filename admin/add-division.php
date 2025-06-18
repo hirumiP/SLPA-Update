@@ -1,5 +1,6 @@
 <?php
 session_start();
+//test 1
 
 // Check if the user is logged in
 if (!isset($_SESSION['employee_ID'])) {
