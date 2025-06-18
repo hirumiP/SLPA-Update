@@ -1,19 +1,20 @@
 <?php
 include(__DIR__ . '/../user/includes/dbc.php');
 
+// Approve logic using unique ID
 if (isset($_POST['approve'])) {
-    $division = $_POST['division'];
-    $item_name = $_POST['item_name'];
-    $year = $_POST['year'];
+    $request_id = $_POST['request_id']; // Unique ID from hidden input
     $unit_price = $_POST['unit_price'];
     $quantity = $_POST['quantity'];
 
+    // Use correct column name: request_id
     $query = "UPDATE item_requests 
-              SET unit_price = '$unit_price', quantity = '$quantity', status = 'Approved'
-              WHERE division = '$division' AND year = '$year'
-              AND item_code = (SELECT item_code FROM items WHERE name = '$item_name' LIMIT 1)";
+              SET unit_price = '$unit_price', 
+                  quantity = '$quantity', 
+                  status = 'Approved' 
+              WHERE request_id = '$request_id'";
 
-    $run = mysqli_query($connect, $query);
+    $run = mysqli_query($connect, $query);  // You forgot this line earlier
 
     if ($run) {
         header("Location: dashbord_user.php?success=approved");
@@ -23,14 +24,12 @@ if (isset($_POST['approve'])) {
     }
 }
 
+// Delete logic using unique ID
 if (isset($_POST['delete'])) {
-    $division = $_POST['division'];
-    $item_name = $_POST['item_name'];
-    $year = $_POST['year'];
+    $request_id = $_POST['request_id']; // Unique ID from hidden input
 
     $query = "DELETE FROM item_requests 
-              WHERE division = '$division' AND year = '$year'
-              AND item_code = (SELECT item_code FROM items WHERE name = '$item_name' LIMIT 1)";
+              WHERE request_id = '$request_id'";  // Again, corrected column name
 
     $run = mysqli_query($connect, $query);
 

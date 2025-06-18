@@ -39,33 +39,10 @@ $sql = "SELECT
 
 $result = mysqli_query($connect, $sql);
 
-$grouped_items = [];
-$grand_total = 0;
-
+$item_list = [];
 if ($result && mysqli_num_rows($result) > 0) {
     while ($row = mysqli_fetch_assoc($result)) {
-        $category = $row['category_code'] ?? 'Uncategorized';
-        $name_parts = explode(' ', trim($row['item_name']));
-        $second_word = $name_parts[1] ?? $name_parts[0];
-        $key = $category . '|' . $second_word;
-
-        if (!isset($grouped_items[$key])) {
-            $grouped_items[$key] = [
-                'category' => $category,
-                'item_type' => $second_word,
-                'quantity' => 0,
-                'total_cost' => 0,
-                'budget_name' => $row['budget_name'],
-                'justifications' => [],
-                'remarks' => [],
-            ];
-        }
-
-        $grouped_items[$key]['quantity'] += $row['quantity'];
-        $grouped_items[$key]['total_cost'] += $row['unit_price'] * $row['quantity'];
-        $grouped_items[$key]['justifications'][] = $row['justification'];
-        $grouped_items[$key]['remarks'][] = $row['remark'];
-        $grand_total += $row['unit_price'] * $row['quantity'];
+        $item_list[] = $row;
     }
 }
 ?>
@@ -96,7 +73,6 @@ if ($result && mysqli_num_rows($result) > 0) {
     margin-bottom: 0;
 }
 
-
 .print-only {
     display: none;
 }
@@ -108,7 +84,6 @@ if ($result && mysqli_num_rows($result) > 0) {
         display: flex !important;
     }
 }
-
 
 body {
     margin: 10px;
@@ -156,17 +131,6 @@ thead tr:nth-child(2) th {
     font-size: 11px;
     line-height: 1;
 }
-
-
-.category-row {
-    background-color: #f0f0f0;
-    font-weight: bold;
-}
-
-.total-row {
-    background-color: #e6f2ff;
-    font-weight: bold;
-}
 </style>
 
 <div class="container-fluid px-4 mt-4">
@@ -181,11 +145,10 @@ thead tr:nth-child(2) th {
         <button class="btn btn-primary" onclick="window.print()">Print</button>
     </div>
 
-    <?php if (!empty($grouped_items)): ?>
+    <?php if (!empty($item_list)): ?>
         <table class="table table-bordered text-center">
             <thead class="thead-dark">
                 <tr>
-                    
                     <th>Budget Responsibility Code</th>
                     <th>Cost Centre Code / Location of the Item</th>
                     <th>C.E.P / Budget Number</th>
@@ -206,56 +169,53 @@ thead tr:nth-child(2) th {
                     <th>[7]</th>
                     <th>[8]</th>
                     <th>[9]</th>
+                </tr>
             </thead>
             <tbody>
-                <?php foreach ($grouped_items as $group): ?>
+                <?php foreach ($item_list as $row): ?>
                     <tr>
-                        
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td><?php echo $group['quantity']; ?></td>
-                        <td><?php echo htmlspecialchars($group['item_type']); ?></td>
-                        <td><?php echo number_format($group['total_cost'], 2); ?></td>
+                        <td><?php echo $row['quantity']; ?></td>
+                        <td><?php echo htmlspecialchars($row['item_name']); ?></td>
+                        <td><?php echo number_format($row['unit_price'] * $row['quantity'], 2); ?></td>
                         <td></td>
-                        <td><?php echo htmlspecialchars(implode('; ', array_unique($group['justifications']))); ?></td>
-                        <td><?php echo htmlspecialchars(implode('; ', array_unique($group['remarks']))); ?></td>
+                        <td><?php echo htmlspecialchars($row['justification']); ?></td>
+                        <td><?php echo htmlspecialchars($row['remark']); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
 
         <!-- ✅ Note and Signature section - print only -->
-<div class="print-only" style="margin-top: 10px; flex-direction: column; width: 100%;">
-    <!-- Note Section -->
-    <div style="margin-bottom: 60px; font-size: 11px;">
-        <p>Note:    [1] Individual forms should be submitted for C.E.P items, Special Works, Plant & Equipment and Vehicles</p>
-        <div style="margin-left: 30px;">
-    <p>[2] Cost Centre Code (Location of the Item) should be clearly indicated in Column No.[2] above for each and every item</p>
-    <p>[3] Column No.[3] above is applicable only for continuation Items</p>
-    <p>[4] A brief but comprehensive Justification report must be included for all items exceeding Rs.500,000/=</p>
-</div>
+        <div class="print-only" style="margin-top: 10px; flex-direction: column; width: 100%;">
+            <!-- Note Section -->
+            <div style="margin-bottom: 60px; font-size: 11px;">
+                <p>Note: [1] Individual forms should be submitted for C.E.P items, Special Works, Plant & Equipment and Vehicles</p>
+                <div style="margin-left: 30px;">
+                    <p>[2] Cost Centre Code (Location of the Item) should be clearly indicated in Column No.[2] above for each and every item</p>
+                    <p>[3] Column No.[3] above is applicable only for continuation Items</p>
+                    <p>[4] A brief but comprehensive Justification report must be included for all items exceeding Rs.500,000/=</p>
+                </div>
+            </div>
 
-    </div>
-
-    <!-- Signature Section -->
-    <div style="display: flex; justify-content: space-between; width: 100%;">
-        <div style="text-align: center; width: 30%;">
-            ___________________________<br>
-            Prepared By
+            <!-- Signature Section -->
+            <div style="display: flex; justify-content: space-between; width: 100%;">
+                <div style="text-align: center; width: 30%;">
+                    ___________________________<br>
+                    Prepared By
+                </div>
+                <div style="text-align: center; width: 30%;">
+                    ___________________________<br>
+                    Checked By
+                </div>
+                <div style="text-align: center; width: 30%;">
+                    ___________________________<br>
+                    Head of Division/Section
+                </div>
+            </div>
         </div>
-        <div style="text-align: center; width: 30%;">
-            ___________________________<br>
-            Checked By
-        </div>
-        <div style="text-align: center; width: 30%;">
-            ___________________________<br>
-            Head of Division/Section
-        </div>
-    </div>
-</div>
-
-
     <?php else: ?>
         <p>No approved item requests found for your division.</p>
     <?php endif; ?>

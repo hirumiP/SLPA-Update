@@ -11,8 +11,8 @@ include(__DIR__ . '/../user/includes/dbc.php');
 
 $loggedDivision = $_SESSION['division'];
 
-// Fetch item requests for that division
 $sql = "SELECT 
+            ir.request_id,
             ir.division, 
             i.name AS item_name, 
             b.budget AS budget_name, 
@@ -50,7 +50,6 @@ $result = mysqli_query($connect, $sql);
         <table class="table table-bordered text-center">
             <thead>
                 <tr>
-                    
                     <th>Item Name</th>
                     <th>Budget Name</th>
                     <th>Year</th>
@@ -69,7 +68,6 @@ $result = mysqli_query($connect, $sql);
                     while ($row = mysqli_fetch_assoc($result)) {
                         echo "
                         <tr>
-                            
                             <td>{$row['item_name']}</td>
                             <td>{$row['budget_name']}</td>
                             <td>{$row['year']}</td>
@@ -92,7 +90,7 @@ $result = mysqli_query($connect, $sql);
                                     class='btn btn-primary btn-sm'
                                     data-bs-toggle='modal'
                                     data-bs-target='#approveModal'
-                                    onclick='fillForm(\"{$row['division']}\", \"{$row['item_name']}\", \"{$row['year']}\", \"{$row['unit_price']}\", \"{$row['quantity']}\")'
+                                    onclick='fillForm(\"{$row['request_id']}\", \"{$row['unit_price']}\", \"{$row['quantity']}\")'
                                 >
                                     Approve
                                 </button>
@@ -108,12 +106,7 @@ $result = mysqli_query($connect, $sql);
     </div>
 </div>
 
-<!-- ✅ Print Button -->
-<div class="text-end mb-3 no-print">
-    <button class="btn btn-primary" onclick="printPage()">Print</button>
-</div>
-
-<!-- Approve Modal -->
+<!-- ✅ Approve Modal -->
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -123,9 +116,7 @@ $result = mysqli_query($connect, $sql);
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-              <input type="hidden" name="division" id="division">
-              <input type="hidden" name="item_name" id="item_name">
-              <input type="hidden" name="year" id="year">
+              <input type="hidden" name="request_id" id="request_id">
               
               <div class="mb-3">
                   <label for="unit_price" class="form-label">Unit Price</label>
@@ -150,10 +141,9 @@ function printPage() {
     window.print();
 }
 
-function fillForm(division, item_name, year, unit_price, quantity) {
-    document.getElementById('division').value = division;
-    document.getElementById('item_name').value = item_name;
-    document.getElementById('year').value = year;
+// ✅ Fills modal with selected request data
+function fillForm(id, unit_price, quantity) {
+    document.getElementById('request_id').value = id;
     document.getElementById('unit_price').value = unit_price;
     document.getElementById('quantity').value = quantity;
 }
