@@ -85,9 +85,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <div class="col-md-4">
-            <label for="year" class="form-label">Year</label>
-            <input type="text" class="form-control" id="year" name="year" value="<?= date('Y'); ?>" readonly>
-        </div>
+    <label for="year" class="form-label">Year</label>
+    <input type="number" class="form-control" id="year" name="year" placeholder="Enter year" value="<?= date('Y'); ?>" min="2020" max="2100" required>
+</div>
+
 
         <div class="col-md-4">
             <label for="unit_price" class="form-label">Unit Price (Rs)</label>
