@@ -11,8 +11,17 @@ include(__DIR__ . '/../user/includes/dbc.php');
 
 $loggedDivision = $_SESSION['division'];
 $loggedOrganization = "SRI LANKA PORTS AUTHORITY";
-$loggedYear = date("Y");
+$selectedYear = isset($_GET['year']) ? $_GET['year'] : date("Y"); // Get year from GET or default to current
 
+// Fetch years for dropdown
+$yearQuery = "SELECT DISTINCT year FROM item_requests ORDER BY year DESC";
+$yearResult = mysqli_query($connect, $yearQuery);
+$years = [];
+while ($row = mysqli_fetch_assoc($yearResult)) {
+    $years[] = $row['year'];
+}
+
+// Main data query
 $sql = "SELECT 
             i.category_code,
             ir.division, 
@@ -33,7 +42,7 @@ $sql = "SELECT
         LEFT JOIN 
             budget b ON ir.budget_id = b.id
         WHERE
-            ir.division = '$loggedDivision' AND ir.status = 'Approved'
+            ir.division = '$loggedDivision' AND ir.status = 'Approved' AND ir.year = '$selectedYear'
         ORDER BY
             i.category_code";
 
@@ -48,88 +57,82 @@ if ($result && mysqli_num_rows($result) > 0) {
 ?>
 
 <style>
+/* ... your existing styles ... */
+
 @media print {
+    @page {
+        margin: 0;
+        size: A4 portrait;
+    }
+
     .no-print,
     header, 
     footer, 
     .navbar, 
-    .sidebar {
+    .sidebar,
+    .filter-form {
         display: none !important;
     }
 
-    .print-only {
-        display: block !important;
-        margin-top: 0;
-    }
-
-    body {
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-    }
-}
-
-@page {
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-.print-only {
-    display: none;
-}
-@media print {
-    .no-print {
-        display: none !important;
-    }
     .print-only {
         display: flex !important;
     }
+
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 13px;
+    }
 }
+
 
 body {
     margin: 10px;
     font-size: 13px;
 }
 
-.container-fluid {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-}
-
-th, td {
-    vertical-align: middle !important;
+table.table th,
+table.table td {
+    font-size: 11px;
+    padding: 4px 5px;
+    border: 1px solid #ccc;
     word-wrap: break-word;
     white-space: normal;
-    padding: 4px 6px;
-    font-size: 11px;
 }
+
+/* Apply specific minimum widths to reduce space */
+table.table th:nth-child(1),
+table.table td:nth-child(1) { width: 50px; }
+
+table.table th:nth-child(2),
+table.table td:nth-child(2) { width: 50px; }
+
+table.table th:nth-child(3),
+table.table td:nth-child(3) { width: 50px; }
+
+table.table th:nth-child(4),
+table.table td:nth-child(4) { width: 40px; }
+
+table.table th:nth-child(5),
+table.table td:nth-child(5) { width: 150px; }
+
+table.table th:nth-child(6),
+table.table td:nth-child(6) { width: 80px; }
+
+table.table th:nth-child(7),
+table.table td:nth-child(7) { width: 80px; }
+
+table.table th:nth-child(8),
+table.table td:nth-child(8) { width: 200px; }
+
+table.table th:nth-child(9),
+table.table td:nth-child(9) { width: 100px; }
+
 
 table.table {
     width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
-}
-
-th, td {
-    border: 1px solid #ccc;
-}
-
-th:nth-child(1), td:nth-child(1) { width: 5%; }
-th:nth-child(2), td:nth-child(2) { width: 5%; }
-th:nth-child(3), td:nth-child(3) { width: 5%; }
-th:nth-child(4), td:nth-child(4) { width: 5%; }
-th:nth-child(5), td:nth-child(5) { width: 10%; }
-th:nth-child(6), td:nth-child(6) { width: 8%; }
-th:nth-child(7), td:nth-child(7) { width: 8%; }
-th:nth-child(8), td:nth-child(8) { width: 12%; }
-th:nth-child(9), td:nth-child(9),
-th:nth-child(10), td:nth-child(10) {
-    width: 11.5%;
-}
-
-thead tr:nth-child(2) th {
-    padding: 2px 4px;
-    font-size: 11px;
-    line-height: 1;
 }
 </style>
 
@@ -137,8 +140,22 @@ thead tr:nth-child(2) th {
     <!-- Organization and Division Details -->
     <div class="text-center mb-3">
         <h4><?php echo $loggedOrganization; ?></h4>
-        <h5>Approved Item Requests - Division: <?php echo $loggedDivision; ?> | Year: <?php echo $loggedYear; ?></h5>
+        <h5>Approved Item Requests - Division: <?php echo $loggedDivision; ?> | Year: <?php echo $selectedYear; ?></h5>
     </div>
+
+    <!-- ✅ Year Filter Dropdown -->
+    <form method="GET" class="filter-form no-print mb-3">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <label for="year"><strong>Select Year:</strong></label>
+            <select name="year" id="year" class="form-select w-auto" onchange="this.form.submit()">
+                <?php foreach ($years as $year): ?>
+                    <option value="<?php echo $year; ?>" <?php if ($selectedYear == $year) echo 'selected'; ?>>
+                        <?php echo $year; ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </form>
 
     <!-- ✅ Print Button -->
     <div class="text-end mb-3 no-print">
@@ -155,7 +172,7 @@ thead tr:nth-child(2) th {
                     <th>Qty</th>
                     <th>Item Name</th>
                     <th>Total Estimated Cost</th>
-                    <th>Allocation Required for 2025 Rs.</th>
+                    <th>Allocation Required for <?php echo $selectedYear + 1; ?> Rs.</th>
                     <th>Justification Report</th>
                     <th>Remark</th>
                 </tr>
@@ -188,9 +205,8 @@ thead tr:nth-child(2) th {
             </tbody>
         </table>
 
-        <!-- ✅ Note and Signature section - print only -->
+        <!-- ✅ Note and Signature Section (Print Only) -->
         <div class="print-only" style="margin-top: 10px; flex-direction: column; width: 100%;">
-            <!-- Note Section -->
             <div style="margin-bottom: 60px; font-size: 11px;">
                 <p>Note: [1] Individual forms should be submitted for C.E.P items, Special Works, Plant & Equipment and Vehicles</p>
                 <div style="margin-left: 30px;">
@@ -200,7 +216,6 @@ thead tr:nth-child(2) th {
                 </div>
             </div>
 
-            <!-- Signature Section -->
             <div style="display: flex; justify-content: space-between; width: 100%;">
                 <div style="text-align: center; width: 30%;">
                     ___________________________<br>
@@ -217,7 +232,7 @@ thead tr:nth-child(2) th {
             </div>
         </div>
     <?php else: ?>
-        <p>No approved item requests found for your division.</p>
+        <p>No approved item requests found for the selected year.</p>
     <?php endif; ?>
 </div>
 
