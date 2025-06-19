@@ -23,29 +23,40 @@ if ($item_result->num_rows > 0) {
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $division = $_POST['division'];
     $item_code = $_POST['item'];
-    $year = $_POST['year'];
+    $year = !empty($_POST['year']) ? $_POST['year'] : null;
     $justification = $_POST['justification'];
     $reason = $_POST['reason'];
-    $unit_price = $_POST['unit_price'];
-    $quantity = $_POST['quantity'];
-    $budget_id = $_POST['budget'];
-    $remark = $_POST['remark'];
+    $unit_price = !empty($_POST['unit_price']) ? $_POST['unit_price'] : null;
+    $quantity = !empty($_POST['quantity']) ? $_POST['quantity'] : null;
+    $budget_id = !empty($_POST['budget']) ? $_POST['budget'] : null;
+    $remark = !empty($_POST['remark']) ? $_POST['remark'] : null;
 
-    $sql = "INSERT INTO item_requests (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
-    VALUES ('$division', '$item_code', 
-    " . (!empty($year) ? "'$year'" : "NULL") . ", 
-    '$justification', '$reason', 
-    " . (!empty($unit_price) ? "'$unit_price'" : "NULL") . ", 
-    " . (!empty($quantity) ? "'$quantity'" : "NULL") . ", 
-    " . (!empty($budget_id) ? "'$budget_id'" : "NULL") . ", 
-    " . (!empty($remark) ? "'$remark'" : "NULL") . ")";
+    $stmt = $connect->prepare("INSERT INTO item_requests 
+        (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-    if ($connect->query($sql) === TRUE) {
+    $stmt->bind_param(
+        "ssisssiss",  // s = string, i = integer (adjust based on your DB column types)
+        $division,
+        $item_code,
+        $year,
+        $justification,
+        $reason,
+        $unit_price,
+        $quantity,
+        $budget_id,
+        $remark
+    );
+
+    if ($stmt->execute()) {
         echo "<div class='alert alert-success text-center'>Item request successfully added!</div>";
     } else {
-        echo "<div class='alert alert-danger text-center'>Error: " . $connect->error . "</div>";
+        echo "<div class='alert alert-danger text-center'>Error: " . $stmt->error . "</div>";
     }
+
+    $stmt->close();
 }
+
 ?>
 
 <div class="container-fluid px-4">
