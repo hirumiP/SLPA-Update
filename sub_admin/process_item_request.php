@@ -17,7 +17,7 @@ if (isset($_POST['approve'])) {
     $run = mysqli_query($connect, $query);  // You forgot this line earlier
 
     if ($run) {
-        header("Location: dashbord_user.php?success=approved");
+        header("Location: item_req.php?success=approved");
         exit();
     } else {
         echo "Failed to approve.";
