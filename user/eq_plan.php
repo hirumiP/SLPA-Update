@@ -55,13 +55,17 @@ $result = mysqli_stmt_get_result($stmt);
         display: none !important;
     }
 }
+.justify-left {
+    text-align: left;
+}
+
 </style>
 
 <div class="container-fluid px-4">
     <h2 class="text-center mb-4">Item Request Plans (Division: <?php echo htmlspecialchars($user_division); ?>)</h2>
     
     <div class="table-container">
-        <table class="table table-bordered text-center">
+        <table class="table table-bordered table-left">
             <thead>
                 <tr>
                     
@@ -88,7 +92,7 @@ $result = mysqli_stmt_get_result($stmt);
                             <td>" . htmlspecialchars($row['unit_price']) . "</td>
                             <td>" . htmlspecialchars($row['quantity']) . "</td>
                             <td>" . htmlspecialchars($row['reason']) . "</td>
-                            <td>" . htmlspecialchars($row['justification']) . "</td>
+                            <td class='justify-left'>" . htmlspecialchars($row['justification']) . "</td>
                             <td>" . htmlspecialchars($row['remark']) . "</td>
                             <td>";
 
