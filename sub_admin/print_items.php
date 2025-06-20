@@ -120,10 +120,10 @@ table.table th:nth-child(6),
 table.table td:nth-child(6) { width: 80px; }
 
 table.table th:nth-child(7),
-table.table td:nth-child(7) { width: 80px; }
+table.table td:nth-child(7) { width: 60px; }
 
 table.table th:nth-child(8),
-table.table td:nth-child(8) { width: 200px; }
+table.table td:nth-child(8) { width: 220px; }
 
 table.table th:nth-child(9),
 table.table td:nth-child(9) { width: 100px; }
@@ -163,7 +163,7 @@ table.table {
     </div>
 
     <?php if (!empty($item_list)): ?>
-        <table class="table table-bordered text-center">
+        <table class="table table-bordered table-left">
             <thead class="thead-dark">
                 <tr>
                     <th>Budget Responsibility Code</th>
