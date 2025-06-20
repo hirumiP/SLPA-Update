@@ -47,7 +47,7 @@ $result = mysqli_query($connect, $sql);
 <div class="container-fluid px-4">
     <h2 class="text-center mb-4">Item Request Plans (Division: <?php echo $loggedDivision; ?>)</h2>
     <div class="table-container">
-        <table class="table table-bordered text-center">
+        <table class="table table-bordered table-left">
             <thead>
                 <tr>
                     <th>Item Name</th>
