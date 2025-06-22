@@ -12,6 +12,9 @@ include(__DIR__ . '/../user/includes/dbc.php');
 $items = [];
 $division = $_SESSION['division'];
 
+$quantityError = ""; // ✨ Error message variable
+
+// Fetch items
 $item_query = "SELECT item_code, name FROM items";
 $item_result = $connect->query($item_query);
 if ($item_result->num_rows > 0) {
@@ -27,41 +30,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $justification = $_POST['justification'];
     $reason = $_POST['reason'];
     $unit_price = !empty($_POST['unit_price']) ? $_POST['unit_price'] : null;
-    if (!isset($_POST['quantity']) || !is_numeric($_POST['quantity']) || intval($_POST['quantity']) <= 0) {
-    echo "<div class='alert alert-danger text-center'>Please enter a valid quantity (greater than 0).</div>";
-    exit();
-}
-$quantity = intval($_POST['quantity']);
-
     $budget_id = !empty($_POST['budget']) ? $_POST['budget'] : null;
     $remark = !empty($_POST['remark']) ? $_POST['remark'] : null;
 
-    $stmt = $connect->prepare("INSERT INTO item_requests 
-        (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-    $stmt->bind_param(
-        "ssisssiss",  // s = string, i = integer (adjust based on your DB column types)
-        $division,
-        $item_code,
-        $year,
-        $justification,
-        $reason,
-        $unit_price,
-        $quantity,
-        $budget_id,
-        $remark
-    );
-
-    if ($stmt->execute()) {
-        echo "<div class='alert alert-success text-center'>Item request successfully added!</div>";
+    // ✨ Quantity validation
+    if (!isset($_POST['quantity']) || !is_numeric($_POST['quantity']) || intval($_POST['quantity']) <= 0) {
+        $quantityError = "Please enter a valid quantity (greater than 0).";
     } else {
-        echo "<div class='alert alert-danger text-center'>Error: " . $stmt->error . "</div>";
+        $quantity = intval($_POST['quantity']);
     }
 
-    $stmt->close();
-}
+    // ✨ If no quantity error, proceed with DB insert
+    if (empty($quantityError)) {
+        $stmt = $connect->prepare("INSERT INTO item_requests 
+            (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
+        $stmt->bind_param(
+            "ssisssiss",
+            $division,
+            $item_code,
+            $year,
+            $justification,
+            $reason,
+            $unit_price,
+            $quantity,
+            $budget_id,
+            $remark
+        );
+
+        if ($stmt->execute()) {
+            echo "<div class='alert alert-success text-center'>Item request successfully added!</div>";
+        } else {
+            echo "<div class='alert alert-danger text-center'>Error: " . $stmt->error . "</div>";
+        }
+
+        $stmt->close();
+    }
+}
 ?>
 
 <div class="container-fluid px-4">
@@ -77,9 +83,9 @@ $quantity = intval($_POST['quantity']);
         <div class="col-md-4">
             <label for="item" class="form-label">Item</label>
             <select id="item" name="item" class="form-select" required>
-                <option selected disabled>Select Item</option>
+                <option disabled <?= !isset($_POST['item']) ? 'selected' : ''; ?>>Select Item</option>
                 <?php foreach ($items as $item): ?>
-                    <option value="<?= $item['item_code']; ?>">
+                    <option value="<?= $item['item_code']; ?>" <?= (isset($_POST['item']) && $_POST['item'] === $item['item_code']) ? 'selected' : ''; ?>>
                         <?= $item['item_code']; ?> - <?= $item['name']; ?>
                     </option>
                 <?php endforeach; ?>
@@ -89,58 +95,68 @@ $quantity = intval($_POST['quantity']);
         <div class="col-md-4">
             <label for="budget" class="form-label">Budget</label>
             <select id="budget" name="budget" class="form-select">
-                <option selected>Choose Budget</option>
+                <option disabled <?= !isset($_POST['budget']) ? 'selected' : ''; ?>>Choose Budget</option>
                 <?php
                 $sql = "SELECT * FROM budget";
                 $result = $connect->query($sql);
                 while ($row = $result->fetch_assoc()) {
-                    echo "<option value='" . $row['id'] . "'>" . $row['budget'] . "</option>";
+                    $selected = (isset($_POST['budget']) && $_POST['budget'] == $row['id']) ? 'selected' : '';
+                    echo "<option value='" . $row['id'] . "' $selected>" . $row['budget'] . "</option>";
                 }
                 ?>
             </select>
         </div>
 
         <div class="col-md-4">
-    <label for="year" class="form-label">Year</label>
-    <input type="number" class="form-control" id="year" name="year" placeholder="Enter year" value="<?= date('Y'); ?>" min="2020" max="2100" required>
-</div>
-
-
-        <div class="col-md-4">
-            <label for="unit_price" class="form-label">Unit Price (Rs)</label>
-            <input type="number" class="form-control" id="unit_price" name="unit_price" placeholder="Enter unit price" step="0.01" min="0">
+            <label for="year" class="form-label">Year</label>
+            <input type="number" class="form-control" id="year" name="year" placeholder="Enter year"
+                   value="<?= isset($_POST['year']) ? htmlspecialchars($_POST['year']) : date('Y'); ?>" min="2020" max="2100" required>
         </div>
 
         <div class="col-md-4">
-    <label for="quantity" class="form-label">Quantity</label>
-    <input 
-        type="number" 
-        class="form-control" 
-        id="quantity" 
-        name="quantity" 
-        placeholder="Enter quantity" 
-        min="1" 
-        required
-    >
-</div>
+            <label for="unit_price" class="form-label">Unit Price (Rs)</label>
+            <input type="number" class="form-control" id="unit_price" name="unit_price"
+                   placeholder="Enter unit price" step="0.01" min="0"
+                   value="<?= isset($_POST['unit_price']) ? htmlspecialchars($_POST['unit_price']) : ''; ?>">
+        </div>
 
+        <div class="col-md-4">
+            <label for="quantity" class="form-label">Quantity</label>
+            <?php if (!empty($quantityError)): ?>
+                <div class="text-danger mb-2"><?= $quantityError; ?></div>
+            <?php endif; ?>
+            <input
+                type="number"
+                class="form-control <?= !empty($quantityError) ? 'is-invalid' : ''; ?>"
+                id="quantity"
+                name="quantity"
+                placeholder="Enter quantity"
+                min="1"
+                required
+                value="<?= isset($_POST['quantity']) ? htmlspecialchars($_POST['quantity']) : ''; ?>"
+            >
+        </div>
 
         <div class="col-md-12">
             <label for="reason" class="form-label">Reason</label>
             <select id="reason" name="reason" class="form-select">
-                <option value="New">New</option>
-                <option value="Replace">Replace</option>
+                <option value="New" <?= (isset($_POST['reason']) && $_POST['reason'] === 'New') ? 'selected' : ''; ?>>New</option>
+                <option value="Replace" <?= (isset($_POST['reason']) && $_POST['reason'] === 'Replace') ? 'selected' : ''; ?>>Replace</option>
             </select>
         </div>
 
         <div class="col-md-12">
             <label for="justification" class="form-label">Justification</label>
-            <input type="text" class="form-control" id="justification" name="justification" placeholder="Enter justification">
+            <input type="text" class="form-control" id="justification" name="justification"
+                   placeholder="Enter justification"
+                   value="<?= isset($_POST['justification']) ? htmlspecialchars($_POST['justification']) : ''; ?>">
         </div>
 
         <div class="col-md-12">
             <label for="remark" class="form-label">Remark</label>
-            <input type="text" class="form-control" id="remark" name="remark" placeholder="Enter remark (optional)">
+            <input type="text" class="form-control" id="remark" name="remark"
+                   placeholder="Enter remark (optional)"
+                   value="<?= isset($_POST['remark']) ? htmlspecialchars($_POST['remark']) : ''; ?>">
         </div>
 
         <div class="col-12 text-center">
