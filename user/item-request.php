@@ -27,7 +27,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $division = $_POST['division'];
     $item_code = $_POST['item'];
     $year = !empty($_POST['year']) ? $_POST['year'] : null;
-    $justification = $_POST['justification'];
+    if (empty(trim($_POST['justification']))) {
+    echo "<div class='alert alert-danger text-center'>Justification is required.</div>";
+    exit();
+}
+    $justification = trim($_POST['justification']);
     $reason = $_POST['reason'];
     $unit_price = !empty($_POST['unit_price']) ? $_POST['unit_price'] : null;
     $budget_id = !empty($_POST['budget']) ? $_POST['budget'] : null;
@@ -146,11 +150,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <div class="col-md-12">
-            <label for="justification" class="form-label">Justification</label>
-            <input type="text" class="form-control" id="justification" name="justification"
-                   placeholder="Enter justification"
-                   value="<?= isset($_POST['justification']) ? htmlspecialchars($_POST['justification']) : ''; ?>">
-        </div>
+    <label for="justification" class="form-label">Justification</label>
+    <input 
+        type="text" 
+        class="form-control" 
+        id="justification" 
+        name="justification" 
+        placeholder="Enter justification" 
+        required
+    >
+</div>
 
         <div class="col-md-12">
             <label for="remark" class="form-label">Remark</label>
