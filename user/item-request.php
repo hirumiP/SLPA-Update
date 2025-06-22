@@ -27,7 +27,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $justification = $_POST['justification'];
     $reason = $_POST['reason'];
     $unit_price = !empty($_POST['unit_price']) ? $_POST['unit_price'] : null;
-    $quantity = !empty($_POST['quantity']) ? $_POST['quantity'] : null;
+    if (!isset($_POST['quantity']) || !is_numeric($_POST['quantity']) || intval($_POST['quantity']) <= 0) {
+    echo "<div class='alert alert-danger text-center'>Please enter a valid quantity (greater than 0).</div>";
+    exit();
+}
+$quantity = intval($_POST['quantity']);
+
     $budget_id = !empty($_POST['budget']) ? $_POST['budget'] : null;
     $remark = !empty($_POST['remark']) ? $_POST['remark'] : null;
 
@@ -107,9 +112,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <div class="col-md-4">
-            <label for="quantity" class="form-label">Quantity</label>
-            <input type="number" class="form-control" id="quantity" name="quantity" placeholder="Enter quantity" min="1">
-        </div>
+    <label for="quantity" class="form-label">Quantity</label>
+    <input 
+        type="number" 
+        class="form-control" 
+        id="quantity" 
+        name="quantity" 
+        placeholder="Enter quantity" 
+        min="1" 
+        required
+    >
+</div>
+
 
         <div class="col-md-12">
             <label for="reason" class="form-label">Reason</label>
