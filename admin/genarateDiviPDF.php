@@ -38,22 +38,8 @@ if (isset($_POST['generate_report'])) {
     }
 
     class PDF extends FPDF {
-        // Define column widths globally
         public $col_widths = [20, 20, 20, 15, 45, 30, 20, 45, 40];
 
-        // Function to calculate max height for a row based on text wrapping
-        function RowHeight($data) {
-            $maxLines = 0;
-            foreach ($data as $i => $txt) {
-                $nb = $this->NbLines($this->col_widths[$i], $txt);
-                if ($nb > $maxLines) {
-                    $maxLines = $nb;
-                }
-            }
-            return $maxLines * 5; // 5mm per line height
-        }
-
-        // Compute number of lines a MultiCell will take
         function NbLines($w, $txt) {
             $cw = &$this->CurrentFont['cw'];
             if ($w == 0)
@@ -97,7 +83,6 @@ if (isset($_POST['generate_report'])) {
             return $nl;
         }
 
-        // Draw row with wrapped text and borders
         function Row($data, $aligns = []) {
             $nb = 0;
             foreach ($data as $i => $txt) {
@@ -106,25 +91,19 @@ if (isset($_POST['generate_report'])) {
             }
             $h = 5 * $nb;
 
-            // Page break check
             $this->CheckPageBreak($h);
 
-            // Draw cells
             for ($i = 0; $i < count($data); $i++) {
                 $w = $this->col_widths[$i];
                 $a = isset($aligns[$i]) ? $aligns[$i] : 'L';
 
-                // Save position
                 $x = $this->GetX();
                 $y = $this->GetY();
 
-                // Border
                 $this->Rect($x, $y, $w, $h);
 
-                // Print text
                 $this->MultiCell($w, 5, $data[$i], 0, $a);
 
-                // Move to right of cell
                 $this->SetXY($x + $w, $y);
             }
             $this->Ln($h);
@@ -163,14 +142,22 @@ if (isset($_POST['generate_report'])) {
         'Remark'
     ];
 
-    // Print header row (wrapped)
+    // Print header row
     $pdf->Row($headers, ['C', 'C', 'C', 'C', 'L', 'R', 'C', 'L', 'L']);
 
+    // Print numbering row: [1], [2], ...
+    $numbers = [];
+    for ($i = 1; $i <= count($headers); $i++) {
+        $numbers[] = "[$i]";
+    }
+    // Center align all numbering cells
+    $pdf->SetFont('Arial', 'I', 8);
+    $pdf->Row($numbers, array_fill(0, count($headers), 'C'));
+
+    // Reset font for data
     $pdf->SetFont('Arial', '', 8);
 
-    // Print data rows
     foreach ($data as $row) {
-        // Compose row data in the order of headers
         $rowData = [
             '',                     // Budget Responsibility Code (empty)
             '',                     // Cost Centre Code (empty)
@@ -182,7 +169,6 @@ if (isset($_POST['generate_report'])) {
             $row['description'],
             $row['remark']
         ];
-        // Alignments: left numeric center right etc
         $aligns = ['L', 'L', 'L', 'C', 'L', 'R', 'L', 'L', 'L'];
 
         $pdf->Row($rowData, $aligns);
@@ -266,7 +252,6 @@ if (isset($_POST['generate_report'])) {
         <select name="division" id="division" required>
             <option value="">-- Select Division --</option>
             <?php 
-            // Re-fetch divisions for the form
             $division_query = "SELECT DISTINCT division FROM item_requests ORDER BY division";
             $division_result = mysqli_query($connect, $division_query);
             while ($row = mysqli_fetch_assoc($division_result)) {
@@ -279,7 +264,6 @@ if (isset($_POST['generate_report'])) {
         <select name="year" id="year" required>
             <option value="">-- Select Year --</option>
             <?php 
-            // Re-fetch years for the form
             $year_query = "SELECT DISTINCT year FROM item_requests ORDER BY year DESC";
             $year_result = mysqli_query($connect, $year_query);
             while ($row = mysqli_fetch_assoc($year_result)) {
