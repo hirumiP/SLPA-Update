@@ -1,44 +1,29 @@
 <?php
-// Include the FPDF library for PDF generation
 require('./fpdf/fpdf.php');
 include('includes/dbc.php');
 
-// Step 1: Fetch all unique divisions for the dropdown
-$division_query = "SELECT DISTINCT division FROM item_requests ORDER BY division";
-$division_result = mysqli_query($connect, $division_query);
-if (!$division_result) {
-    die("Division query failed: " . mysqli_error($connect));
-}
-
-// Step 2: Fetch all distinct years for the year dropdown
-$year_query = "SELECT DISTINCT year FROM item_requests ORDER BY year DESC";
-$year_result = mysqli_query($connect, $year_query);
-if (!$year_result) {
-    die("Year query failed: " . mysqli_error($connect));
-}
-
-// Step 3: Handle the form submission
 if (isset($_POST['generate_report'])) {
     $selected_division = $_POST['division'];
     $selected_year = $_POST['year'];
 
     $sql = "
-        SELECT 
-            ir.division, 
-            i.name AS item_name, 
-            ir.unit_price, 
-            ir.quantity, 
-            ir.description, 
-            (ir.quantity * ir.unit_price) AS total_cost
-        FROM 
-            item_requests ir
-        LEFT JOIN 
-            items i ON ir.item_code = i.item_code
-        WHERE 
-            ir.division = '$selected_division' AND ir.year = '$selected_year'
-        ORDER BY 
-            ir.division
-    ";
+    SELECT 
+        ir.division, 
+        i.name AS item_name, 
+        ir.unit_price, 
+        ir.quantity, 
+        ir.description, 
+        ir.remark,
+        (ir.quantity * ir.unit_price) AS total_cost
+    FROM 
+        item_requests ir
+    LEFT JOIN 
+        items i ON ir.item_code = i.item_code
+    WHERE 
+        ir.division = '$selected_division' AND ir.year = '$selected_year'
+    ORDER BY 
+        ir.division
+";
 
     $result = mysqli_query($connect, $sql);
     if (!$result) {
@@ -52,9 +37,108 @@ if (isset($_POST['generate_report'])) {
         $total_budget += $row['total_cost'];
     }
 
-    // Landscape orientation
-    $pdf = new FPDF('L', 'mm', 'A4');
+    class PDF extends FPDF {
+        // Define column widths globally
+        public $col_widths = [20, 20, 20, 15, 45, 30, 20, 45, 40];
+
+        // Function to calculate max height for a row based on text wrapping
+        function RowHeight($data) {
+            $maxLines = 0;
+            foreach ($data as $i => $txt) {
+                $nb = $this->NbLines($this->col_widths[$i], $txt);
+                if ($nb > $maxLines) {
+                    $maxLines = $nb;
+                }
+            }
+            return $maxLines * 5; // 5mm per line height
+        }
+
+        // Compute number of lines a MultiCell will take
+        function NbLines($w, $txt) {
+            $cw = &$this->CurrentFont['cw'];
+            if ($w == 0)
+                $w = $this->w - $this->rMargin - $this->x;
+            $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
+            $s = str_replace("\r", '', $txt);
+            $nb = strlen($s);
+            if ($nb > 0 and $s[$nb - 1] == "\n")
+                $nb--;
+            $sep = -1;
+            $i = 0;
+            $j = 0;
+            $l = 0;
+            $nl = 1;
+            while ($i < $nb) {
+                $c = $s[$i];
+                if ($c == "\n") {
+                    $i++;
+                    $sep = -1;
+                    $j = $i;
+                    $l = 0;
+                    $nl++;
+                    continue;
+                }
+                if ($c == ' ')
+                    $sep = $i;
+                $l += $cw[$c];
+                if ($l > $wmax) {
+                    if ($sep == -1) {
+                        if ($i == $j)
+                            $i++;
+                    } else
+                        $i = $sep + 1;
+                    $sep = -1;
+                    $j = $i;
+                    $l = 0;
+                    $nl++;
+                } else
+                    $i++;
+            }
+            return $nl;
+        }
+
+        // Draw row with wrapped text and borders
+        function Row($data, $aligns = []) {
+            $nb = 0;
+            foreach ($data as $i => $txt) {
+                $lines = $this->NbLines($this->col_widths[$i], $txt);
+                if ($lines > $nb) $nb = $lines;
+            }
+            $h = 5 * $nb;
+
+            // Page break check
+            $this->CheckPageBreak($h);
+
+            // Draw cells
+            for ($i = 0; $i < count($data); $i++) {
+                $w = $this->col_widths[$i];
+                $a = isset($aligns[$i]) ? $aligns[$i] : 'L';
+
+                // Save position
+                $x = $this->GetX();
+                $y = $this->GetY();
+
+                // Border
+                $this->Rect($x, $y, $w, $h);
+
+                // Print text
+                $this->MultiCell($w, 5, $data[$i], 0, $a);
+
+                // Move to right of cell
+                $this->SetXY($x + $w, $y);
+            }
+            $this->Ln($h);
+        }
+
+        function CheckPageBreak($h) {
+            if ($this->GetY() + $h > $this->PageBreakTrigger)
+                $this->AddPage($this->CurOrientation);
+        }
+    }
+
+    $pdf = new PDF('L', 'mm', 'A4');
     $pdf->AddPage();
+
     $pdf->SetFont('Arial', 'B', 16);
     $pdf->Cell(0, 10, 'SLPA Budget Management 2025', 0, 1, 'C');
     $pdf->Ln(3);
@@ -64,39 +148,54 @@ if (isset($_POST['generate_report'])) {
     $pdf->Cell(0, 8, 'Generated on: ' . date('Y-m-d'), 0, 1, 'C');
     $pdf->Ln(5);
 
-    // Table Header
-    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetFont('Arial', 'B', 8);
     $pdf->SetFillColor(200, 220, 255);
-    $col_widths = [70, 30, 25, 100, 30];
-    $row_height = 6;
 
-    $pdf->Cell($col_widths[0], $row_height, 'Item Name', 1, 0, 'C', true);
-    $pdf->Cell($col_widths[1], $row_height, 'Unit Price', 1, 0, 'C', true);
-    $pdf->Cell($col_widths[2], $row_height, 'Quantity', 1, 0, 'C', true);
-    $pdf->Cell($col_widths[3], $row_height, 'Description', 1, 0, 'C', true);
-    $pdf->Cell($col_widths[4], $row_height, 'Total Cost', 1, 1, 'C', true);
+    $headers = [
+        'Budget Responsibility Code',
+        'Cost Centre Code / Location',
+        'C.E.P / Budget Number',
+        'Qty',
+        'Item Name',
+        'Total Estimated Cost',
+        "Allocation Required for $selected_year",
+        'Justification Report',
+        'Remark'
+    ];
 
-    // Table Data
-    $pdf->SetFont('Arial', '', 9);
+    // Print header row (wrapped)
+    $pdf->Row($headers, ['C', 'C', 'C', 'C', 'L', 'R', 'C', 'L', 'L']);
+
+    $pdf->SetFont('Arial', '', 8);
+
+    // Print data rows
     foreach ($data as $row) {
-        $pdf->Cell($col_widths[0], $row_height, $row['item_name'], 1);
-        $pdf->Cell($col_widths[1], $row_height, number_format($row['unit_price'], 2), 1, 0, 'R');
-        $pdf->Cell($col_widths[2], $row_height, $row['quantity'], 1, 0, 'C');
-        $pdf->Cell($col_widths[3], $row_height, $row['description'], 1);
-        $pdf->Cell($col_widths[4], $row_height, number_format($row['total_cost'], 2), 1, 1, 'R');
+        // Compose row data in the order of headers
+        $rowData = [
+            '',                     // Budget Responsibility Code (empty)
+            '',                     // Cost Centre Code (empty)
+            '',                     // C.E.P / Budget Number (empty)
+            $row['quantity'],
+            $row['item_name'],
+            number_format($row['total_cost'], 2),
+            '',                     // Allocation Required (empty)
+            $row['description'],
+            $row['remark']
+        ];
+        // Alignments: left numeric center right etc
+        $aligns = ['L', 'L', 'L', 'C', 'L', 'R', 'L', 'L', 'L'];
+
+        $pdf->Row($rowData, $aligns);
     }
 
-    // Total
     $pdf->Ln(5);
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->Cell(0, 8, "Total for $selected_division in $selected_year: LKR " . number_format($total_budget, 2), 0, 1, 'R');
 
-    // Footer
     $pdf->Ln(5);
     $pdf->SetFont('Arial', 'I', 9);
     $pdf->Cell(0, 8, 'End of Report', 0, 1, 'C');
 
-    // Output PDF
     $pdf->Output('Division_Report.pdf', 'I');
     exit;
 }
@@ -166,17 +265,27 @@ if (isset($_POST['generate_report'])) {
         <label for="division">Select Division:</label>
         <select name="division" id="division" required>
             <option value="">-- Select Division --</option>
-            <?php while ($row = mysqli_fetch_assoc($division_result)) {
+            <?php 
+            // Re-fetch divisions for the form
+            $division_query = "SELECT DISTINCT division FROM item_requests ORDER BY division";
+            $division_result = mysqli_query($connect, $division_query);
+            while ($row = mysqli_fetch_assoc($division_result)) {
                 echo "<option value='{$row['division']}'>{$row['division']}</option>";
-            } ?>
+            } 
+            ?>
         </select>
 
         <label for="year">Select Year:</label>
         <select name="year" id="year" required>
             <option value="">-- Select Year --</option>
-            <?php while ($row = mysqli_fetch_assoc($year_result)) {
+            <?php 
+            // Re-fetch years for the form
+            $year_query = "SELECT DISTINCT year FROM item_requests ORDER BY year DESC";
+            $year_result = mysqli_query($connect, $year_query);
+            while ($row = mysqli_fetch_assoc($year_result)) {
                 echo "<option value='{$row['year']}'>{$row['year']}</option>";
-            } ?>
+            } 
+            ?>
         </select>
 
         <button type="submit" name="generate_report">Generate Report</button>
