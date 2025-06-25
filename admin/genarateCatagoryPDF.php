@@ -155,10 +155,24 @@ foreach ($categories as $cat) {
 
         $isFirstItem = false;
     }
-    // No extra line after category group
 }
 
-
+/* -----------------------------------------------------------------
+   5.1 TOTAL ESTIMATED COST ROW
+   ----------------------------------------------------------------- */
+$grand_total = 0;
+foreach ($categories as $cat) {
+    foreach ($cat['items'] as $item) {
+        $grand_total += $item['total_cost'];
+    }
+}
+$pdf->SetFont('Arial', 'B', 8);
+$pdf->SetX($offset);
+$pdf->row([
+    '', '', '', '', '', 'Total Estimated Cost:',
+    number_format($grand_total, 2),
+    '', ''
+], ['C','C','C','C','L','R','R','L','L']);
 
 /* -----------------------------------------------------------------
    6. FOOTER
