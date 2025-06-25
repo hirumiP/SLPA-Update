@@ -8,15 +8,16 @@ include 'includes/dbc.php';
 $cat_q = "SELECT * FROM categories ORDER BY category_code";
 $cat_rs = mysqli_query($connect, $cat_q) or die("Category query failed: " . mysqli_error($connect));
 
+// Use total_price from item_requests directly (sum it)
 $item_q = "SELECT 
               i.item_code,
               i.name,
-              i.unit_price,
               i.category_code,
-              SUM(r.quantity) AS total_quantity
+              SUM(r.quantity) AS total_quantity,
+              SUM(r.total_price) AS total_cost
            FROM item_requests r
            INNER JOIN items i ON r.item_code = i.item_code
-           GROUP BY i.item_code, i.name, i.unit_price, i.category_code
+           GROUP BY i.item_code, i.name, i.category_code
            ORDER BY i.category_code, i.item_code";
 
 $item_rs = mysqli_query($connect, $item_q) or die("Item request query failed: " . mysqli_error($connect));
@@ -33,7 +34,7 @@ while ($it = mysqli_fetch_assoc($item_rs)) {
     $categories[$it['category_code']]['items'][] = [
         'item_name'   => $it['name'],
         'qty'         => $it['total_quantity'],
-        'total_cost'  => $it['unit_price'] * $it['total_quantity']
+        'total_cost'  => $it['total_cost']
     ];
 }
 
@@ -98,7 +99,7 @@ $pdf->AddPage();
 $pdf->SetAutoPageBreak(true, 10);
 
 // Column widths: BR, CC, CEP, Qty, Category, Item, Total Cost, Desc, Remark
-$pdf->col_w = [15, 15, 15, 10, 30, 35, 25, 55, 25];
+$pdf->col_w = [15, 15, 15, 10, 30, 55, 25, 45, 25];
 $offset = (297 - array_sum($pdf->col_w)) / 2;
 
 /* -----------------------------------------------------------------
@@ -135,24 +136,29 @@ $pdf->SetX($offset);
 $pdf->row(array_map(fn($i) => '[' . $i . ']', range(1, 9)), array_fill(0, 9, 'C'));
 
 /* -----------------------------------------------------------------
-   5. DATA ROWS
+   5. DATA ROWS (Category name only once per group, no empty lines)
    ----------------------------------------------------------------- */
 $pdf->SetFont('Arial', '', 8);
 foreach ($categories as $cat) {
+    $isFirstItem = true;
     foreach ($cat['items'] as $item) {
         $pdf->SetX($offset);
         $pdf->row([
             '', '', '',                                 // BR Code, CC, CEP
             $item['qty'],
-            $cat['category_name'],
+            $isFirstItem ? $cat['category_name'] : '',  // Category Name only once
             $item['item_name'],
             number_format($item['total_cost'], 2),
             '', // Description
             ''  // Remark
         ], ['C','C','C','C','L','L','R','L','L']);
+
+        $isFirstItem = false;
     }
-    $pdf->Ln(1); // space between categories
+    // No extra line after category group
 }
+
+
 
 /* -----------------------------------------------------------------
    6. FOOTER
