@@ -38,7 +38,7 @@ if (isset($_POST['generate_report'])) {
     }
 
     class PDF extends FPDF {
-        public $col_widths = [20, 20, 20, 15, 45, 30, 20, 45, 40];
+        public $col_widths = [20, 20, 20, 15, 45, 30, 20, 65, 30];
 
         function NbLines($w, $txt) {
             $cw = &$this->CurrentFont['cw'];
