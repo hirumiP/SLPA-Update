@@ -156,8 +156,8 @@ include('includes/dbc.php');
         <div class="card" onclick="location.href='genarateCatagoryPDF.php';">
             <div class="card-body">
                 <div class="emoji">📋</div>
-                <h5 class="card-title">Category-wise Items</h5>
-                <p class="card-text">Generate a detailed report of items arranged by category.</p>
+                <h5 class="card-title">All Divisions Block Allocation</h5>
+                <p class="card-text">Generate a detailed report of all item requests</p>
             </div>
         </div>
     </div>
