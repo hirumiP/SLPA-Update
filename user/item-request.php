@@ -28,9 +28,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $item_code = $_POST['item'];
     $year = !empty($_POST['year']) ? $_POST['year'] : null;
     if (empty(trim($_POST['justification']))) {
-    echo "<div class='alert alert-danger text-center'>Justification is required.</div>";
-    exit();
-}
+        echo "<div class='alert alert-danger text-center'>Justification is required.</div>";
+        exit();
+    }
     $justification = trim($_POST['justification']);
     $reason = $_POST['reason'];
     $unit_price = !empty($_POST['unit_price']) ? $_POST['unit_price'] : null;
@@ -105,7 +105,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $result = $connect->query($sql);
                 while ($row = $result->fetch_assoc()) {
                     $selected = (isset($_POST['budget']) && $_POST['budget'] == $row['id']) ? 'selected' : '';
-                    echo "<option value='" . $row['id'] . "' $selected>" . $row['budget'] . "</option>";
+                    echo "<option value='" . $row['id'] . "' data-name='" . strtolower($row['budget']) . "' $selected>" . $row['budget'] . "</option>";
                 }
                 ?>
             </select>
@@ -150,16 +150,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <div class="col-md-12">
-    <label for="justification" class="form-label">Justification</label>
-    <input 
-        type="text" 
-        class="form-control" 
-        id="justification" 
-        name="justification" 
-        placeholder="Enter justification" 
-        required
-    >
-</div>
+            <label for="justification" class="form-label">Justification</label>
+            <input 
+                type="text" 
+                class="form-control" 
+                id="justification" 
+                name="justification" 
+                placeholder="Enter justification" 
+                required
+            >
+        </div>
 
         <div class="col-md-12">
             <label for="remark" class="form-label">Remark</label>
@@ -176,7 +176,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <?php include('includes/scripts.php'); ?>
 
-<!-- ✅ JavaScript for Auto-Filling Unit Price -->
+<!-- ✅ Auto-fill unit price -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const itemSelect = document.getElementById("item");
@@ -201,5 +201,26 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
         }
     });
+
+    // ✅ Auto-update year based on budget selection
+    const budgetSelect = document.getElementById("budget");
+    const yearInput = document.getElementById("year");
+    const currentYear = new Date().getFullYear();
+
+    function updateYearFromBudget() {
+        const selectedOption = budgetSelect.options[budgetSelect.selectedIndex];
+        const budgetName = selectedOption.getAttribute('data-name');
+
+        if (budgetName && budgetName.includes("next year")) {
+            yearInput.value = currentYear + 1;
+        } else if (budgetName && budgetName.includes("revised")) {
+            yearInput.value = currentYear;
+        }
+    }
+
+    budgetSelect.addEventListener("change", updateYearFromBudget);
+
+    // Trigger on load if already selected
+    updateYearFromBudget();
 });
 </script>
