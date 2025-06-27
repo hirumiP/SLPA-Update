@@ -160,7 +160,7 @@ include('includes/dbc.php');
                 <p class="card-text">Generate a detailed report of all item requests</p>
             </div>
         </div>
-        <div class="card" onclick="location.href='generateComparisonPDF.php';">
+        <div class="card" onclick="location.href='generateComparisonForm.php';">
             <div class="card-body">
                 <div class="emoji">📋</div>
                 <h5 class="card-title">Get the Comparison of the budgets</h5>
