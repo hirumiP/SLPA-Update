@@ -256,5 +256,7 @@ if (isset($_POST['generate_report'])) {
 
         <button type="submit" name="generate_report">Generate Comparison Report</button>
     </form>
+
+    
 </body>
 </html>

@@ -167,6 +167,13 @@ include('includes/dbc.php');
                 <p class="card-text">Generate a coparison report of two budgets</p>
             </div>
         </div>
+        <div class="card" onclick="location.href='genarateComparison.php';">
+            <div class="card-body">
+                <div class="emoji">📊</div>
+                <h5 class="card-title">Final Division Report by bdget and year</h5>
+                <p class="card-text">Generate a yearly overview of the budget.</p>
+            </div>
+        </div>
     </div>
 
     <!-- Bootstrap JS -->
