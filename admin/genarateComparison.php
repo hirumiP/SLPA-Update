@@ -1,21 +1,18 @@
 <?php
-// Include the FPDF library for PDF generation
 require('./fpdf/fpdf.php');
 include('includes/dbc.php');
 
-// Fetch unique years for the dropdown
+// Fetch years
 $year_query = "SELECT DISTINCT year FROM item_requests ORDER BY year";
 $year_result = mysqli_query($connect, $year_query);
 if (!$year_result) {
     die("Year query failed: " . mysqli_error($connect));
 }
 
-// Handle the form submission
 if (isset($_POST['generate_report'])) {
     $selected_year = $_POST['year'];
     $selected_budget_id = $_POST['budget_id'];
 
-    // SQL query without description column
     $sql = "
         SELECT 
             ir.division, 
@@ -40,102 +37,66 @@ if (isset($_POST['generate_report'])) {
     }
 
     $data = [];
-    $division_totals = [];
     $total_budget = 0;
 
     while ($row = mysqli_fetch_assoc($result)) {
         $data[] = $row;
         $total_budget += $row['total_cost'];
-
-        if (!isset($division_totals[$row['division']])) {
-            $division_totals[$row['division']] = 0;
-        }
-        $division_totals[$row['division']] += $row['total_cost'];
     }
 
-    // Generate PDF
+    // PDF Generation
     $pdf = new FPDF('P', 'mm', 'A4');
     $pdf->AddPage();
 
-    // Title
     $pdf->SetFont('Arial', 'B', 16);
     $pdf->Cell(0, 10, 'SLPA Budget Management', 0, 1, 'C');
     $pdf->Ln(5);
+
     $pdf->SetFont('Arial', '', 14);
     $budget_label = $selected_budget_id == '1' ? 'First Round' : 'Revised';
     $pdf->Cell(0, 10, "Yearly Report for $selected_year - $budget_label Budget", 0, 1, 'C');
     $pdf->Ln(5);
+
     $pdf->SetFont('Arial', '', 10);
     $pdf->Cell(0, 8, 'Generated on: ' . date('Y-m-d'), 0, 1, 'C');
     $pdf->Ln(8);
 
-    // Table Header
+    $widths = [
+        'head_code' => 40,
+        'item_name' => 120,  // Expanded to include quantity
+        'total_cost' => 30,
+    ];
+
     $pdf->SetFont('Arial', 'B', 8);
     $pdf->SetFillColor(200, 220, 255);
+    $pdf->Cell($widths['head_code'], 6, 'Head of Account Codes', 1, 0, 'C');
+    $pdf->Cell($widths['item_name'], 6, 'Description (Item Names)', 1, 0, 'C');
+    $pdf->Cell($widths['total_cost'], 6, 'Total Cost', 1, 1, 'C');
 
-    // Table widths adjusted to fit page
-$widths = [
-    'head_code' => 25,
-    'division' => 60,
-    'item_name' => 60,
-    'quantity' => 20,
-    'total_cost' => 25,
-];
+    $pdf->SetFont('Arial', '', 8);
+    $current_division = '';
 
-// Table Headers
-$pdf->Cell($widths['head_code'], 6, 'Head of Account Codes', 1, 0, 'C'); 
-$pdf->Cell($widths['division'], 6, 'Division', 1, 0, 'C');
-$pdf->Cell($widths['item_name'], 6, 'Item Name', 1, 0, 'C');
-$pdf->Cell($widths['quantity'], 6, 'Quantity', 1, 0, 'C');
-$pdf->Cell($widths['total_cost'], 6, 'Total Cost', 1, 1, 'C');
-
-$pdf->SetFont('Arial', '', 8);  // smaller font for table data
-$current_division = '';
-
-foreach ($data as $row) {
-    if ($current_division !== $row['division']) {
-        if ($current_division !== '') {
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->SetFillColor(255, 255, 204);
-            $pdf->Cell(
-                $widths['head_code'] + $widths['division'] + $widths['item_name'] + $widths['quantity'],
-                8,
-                'Total for ' . utf8_decode($current_division),
-                1, 0, 'R', true
-            );
-            $pdf->Cell($widths['total_cost'], 8, number_format($division_totals[$current_division], 2), 1, 1, 'R', true);
-            $pdf->Ln(2);
+    foreach ($data as $row) {
+        if ($current_division !== $row['division']) {
+            $current_division = $row['division'];
+            // Division title row
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(230, 230, 230);
+            $pdf->Cell(array_sum($widths), 8, utf8_decode(" " . $current_division), 1, 1, 'L', true);
             $pdf->SetFont('Arial', '', 8);
-            $pdf->SetFillColor(255, 255, 255);
         }
-        $current_division = $row['division'];
+
+        $formatted_item = str_pad($row['quantity'], 2, '0', STR_PAD_LEFT) . ' - ' . utf8_decode($row['item_name']);
+
+        $pdf->Cell($widths['head_code'], 6, '', 1, 0, 'C');
+        $pdf->Cell($widths['item_name'], 6, $formatted_item, 1, 0, 'L');
+        $pdf->Cell($widths['total_cost'], 6, number_format($row['total_cost'], 2), 1, 1, 'R');
     }
 
-    $pdf->Cell($widths['head_code'], 6, '', 1, 0, 'C');
-    $pdf->Cell($widths['division'], 6, utf8_decode($row['division']), 1, 0, 'C');
-    $pdf->Cell($widths['item_name'], 6, utf8_decode($row['item_name']), 1, 0, 'L');
-    $pdf->Cell($widths['quantity'], 6, $row['quantity'], 1, 0, 'C');
-    $pdf->Cell($widths['total_cost'], 6, number_format($row['total_cost'], 2), 1, 1, 'R');
-}
-
-
-    // Final division total
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->SetFillColor(255, 255, 204);
-    $pdf->Cell(
-        $widths['head_code'] + $widths['division'] + $widths['item_name'] + $widths['quantity'],
-        6,
-        'Total for ' . utf8_decode($current_division),
-        1, 0, 'R', true
-    );
-    $pdf->Cell($widths['total_cost'], 6, number_format($division_totals[$current_division], 2), 1, 1, 'R', true);
-
-    // Overall Total
     $pdf->Ln(8);
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->Cell(0, 6, 'Overall Total Budget: LKR ' . number_format($total_budget, 2), 0, 1, 'R');
 
-    // Output PDF
     $pdf->Output();
 }
 ?>
@@ -221,7 +182,6 @@ foreach ($data as $row) {
         button:active {
             transform: translateY(0);
         }
-        /* Responsive */
         @media (max-width: 480px) {
             form {
                 padding: 35px 20px;
