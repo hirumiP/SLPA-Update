@@ -25,24 +25,22 @@ if (isset($_POST['generate_report'])) {
         ORDER BY ir.division, i.name
     ";
     $result1 = mysqli_query($connect, $sql1) or die("Query 1 failed: " . mysqli_error($connect));
-    $data1 = []; $total_budget = 0;
+    $data1 = []; $total_budget = 0; $i = 0;
     while ($row = mysqli_fetch_assoc($result1)) {
-        $key = $row['division'] . '||' . $row['item_code'] . '||' . $row['unit_price'];
-        if (!isset($data1[$key])) {
-            $data1[$key] = [
-                'item_name' => $row['item_name'],
-                'unit_price' => $row['unit_price'],
-                'quantity' => 0,
-                'total_cost' => 0
-            ];
-        }
-        $data1[$key]['quantity'] += $row['quantity'];
-        $data1[$key]['total_cost'] += $row['total_cost'];
+        $key = 'B1_' . $i++;
+        $data1[$key] = [
+            'division' => $row['division'],
+            'item_code' => $row['item_code'],
+            'item_name' => $row['item_name'],
+            'unit_price' => $row['unit_price'],
+            'quantity' => $row['quantity'],
+            'total_cost' => $row['total_cost']
+        ];
         $total_budget += $row['total_cost'];
     }
 
     // Budget 2 data
-    $data2 = []; $total_budget2 = 0;
+    $data2 = []; $total_budget2 = 0; $i = 0;
     if ($selected_year2 && $selected_budget_id2) {
         $sql2 = "
             SELECT ir.division, ir.item_code, i.name AS item_name, ir.unit_price, ir.quantity,
@@ -54,17 +52,15 @@ if (isset($_POST['generate_report'])) {
         ";
         $result2 = mysqli_query($connect, $sql2) or die("Query 2 failed: " . mysqli_error($connect));
         while ($row = mysqli_fetch_assoc($result2)) {
-            $key = $row['division'] . '||' . $row['item_code'] . '||' . $row['unit_price'];
-            if (!isset($data2[$key])) {
-                $data2[$key] = [
-                    'item_name' => $row['item_name'],
-                    'unit_price' => $row['unit_price'],
-                    'quantity' => 0,
-                    'total_cost' => 0
-                ];
-            }
-            $data2[$key]['quantity'] += $row['quantity'];
-            $data2[$key]['total_cost'] += $row['total_cost'];
+            $key = 'B2_' . $i++;
+            $data2[$key] = [
+                'division' => $row['division'],
+                'item_code' => $row['item_code'],
+                'item_name' => $row['item_name'],
+                'unit_price' => $row['unit_price'],
+                'quantity' => $row['quantity'],
+                'total_cost' => $row['total_cost']
+            ];
             $total_budget2 += $row['total_cost'];
         }
     }
@@ -113,50 +109,57 @@ if (isset($_POST['generate_report'])) {
 
     $pdf->SetFont('Arial', '', 8);
     $current_division = '';
-    $all_keys = array_unique(array_merge(array_keys($data1), array_keys($data2)));
-    sort($all_keys);
 
-    foreach ($all_keys as $key) {
-    list($division, $item_code, $unit_price) = explode('||', $key);
-
-    $row1 = $data1[$key] ?? null;
-    $row2 = $data2[$key] ?? null;
-
-    $item_name = $row1['item_name'] ?? $row2['item_name'] ?? 'Unknown';
-
-    // Show empty if quantity is zero or null
-    $qty1 = (!empty($row1) && $row1['quantity'] > 0) ? $row1['quantity'] : '';
-    $qty2 = (!empty($row2) && $row2['quantity'] > 0) ? $row2['quantity'] : '';
-
-    $cost1 = $row1 ? number_format($row1['total_cost'], 2) : '';
-    $cost2 = $row2 ? number_format($row2['total_cost'], 2) : '';
-
-    if ($current_division !== $division) {
-        $current_division = $division;
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetFillColor(230, 230, 230);
-        $pdf->Cell(
-            $widths['head_code'] + $widths['description'] + $widths['qty1'] + $widths['qty2'],
-            8,
-            utf8_decode(" $current_division"),
-            1, 0, 'L', true
-        );
-        $pdf->Cell($widths['cost1'], 8, '', 1, 0, 'C', true);
-        $pdf->Cell($widths['cost2'], 8, '', 1, 1, 'C', true);
-        $pdf->SetFont('Arial', '', 8);
+    $merged_rows = [];
+    foreach ($data1 as $row) {
+        $merged_rows[] = [
+            'division' => $row['division'],
+            'item_name' => $row['item_name'],
+            'qty1' => $row['quantity'],
+            'qty2' => '',
+            'cost1' => $row['total_cost'],
+            'cost2' => ''
+        ];
+    }
+    foreach ($data2 as $row) {
+        $merged_rows[] = [
+            'division' => $row['division'],
+            'item_name' => $row['item_name'],
+            'qty1' => '',
+            'qty2' => $row['quantity'],
+            'cost1' => '',
+            'cost2' => $row['total_cost']
+        ];
     }
 
-    $formatted_item = utf8_decode($item_name);
-    $pdf->Cell($widths['head_code'], 6, '', 1, 0, 'C');
-    $pdf->Cell($widths['description'], 6, $formatted_item, 1, 0, 'L');
-    $pdf->Cell($widths['qty1'], 6, $qty1, 1, 0, 'C');
-    $pdf->Cell($widths['qty2'], 6, $qty2, 1, 0, 'C');
-    $pdf->Cell($widths['cost1'], 6, $cost1, 1, 0, 'R');
-    $pdf->Cell($widths['cost2'], 6, $cost2, 1, 1, 'R');
-}
+    usort($merged_rows, function ($a, $b) {
+        return [$a['division'], $a['item_name']] <=> [$b['division'], $b['item_name']];
+    });
 
+    foreach ($merged_rows as $row) {
+        if ($row['division'] !== $current_division) {
+            $current_division = $row['division'];
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(230, 230, 230);
+            $pdf->Cell(
+                $widths['head_code'] + $widths['description'] + $widths['qty1'] + $widths['qty2'],
+                8,
+                utf8_decode(" $current_division"),
+                1, 0, 'L', true
+            );
+            $pdf->Cell($widths['cost1'], 8, '', 1, 0, 'C', true);
+            $pdf->Cell($widths['cost2'], 8, '', 1, 1, 'C', true);
+            $pdf->SetFont('Arial', '', 8);
+        }
 
-    // Totals
+        $pdf->Cell($widths['head_code'], 6, '', 1, 0, 'C');
+        $pdf->Cell($widths['description'], 6, utf8_decode($row['item_name']), 1, 0, 'L');
+        $pdf->Cell($widths['qty1'], 6, $row['qty1'], 1, 0, 'C');
+        $pdf->Cell($widths['qty2'], 6, $row['qty2'], 1, 0, 'C');
+        $pdf->Cell($widths['cost1'], 6, $row['cost1'] ? number_format($row['cost1'], 2) : '', 1, 0, 'R');
+        $pdf->Cell($widths['cost2'], 6, $row['cost2'] ? number_format($row['cost2'], 2) : '', 1, 1, 'R');
+    }
+
     $pdf->Ln(8);
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->Cell(0, 6, 'Overall Total Budget (Budget 1): LKR ' . number_format($total_budget, 2), 0, 1, 'R');
