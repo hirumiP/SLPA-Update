@@ -70,23 +70,21 @@ if (isset($_POST['generate_report'])) {
     $pdf->AddPage();
 
     // Title and metadata
-    $pdf->SetFont('Arial', 'B', 16);
-    $pdf->Cell(0, 10, 'SLPA Budget Management', 0, 1, 'C');
-    $pdf->Ln(5);
+    $pdf->SetFont('Arial', 'B', 15);
+    $pdf->Cell(0, 10, 'SLPA Block Allocation', 0, 1, 'C');
+    $pdf->Ln(1);
 
     $budget_label1 = $selected_budget_id == '1' ? 'First Round' : ($selected_budget_id == '2' ? 'Revised' : '');
     $budget_label2 = $selected_budget_id2 == '1' ? 'First Round' : ($selected_budget_id2 == '2' ? 'Revised' : '');
 
-    $pdf->SetFont('Arial', '', 14);
+    $pdf->SetFont('Arial', '', 12);
     $pdf->Cell(0, 10, "Yearly Report for $selected_year - $budget_label1 Budget", 0, 1, 'C');
     if ($selected_year2 && $selected_budget_id2) {
         $pdf->Cell(0, 10, "Compared with $selected_year2 - $budget_label2 Budget", 0, 1, 'C');
     }
-    $pdf->Ln(5);
+    $pdf->Ln(3);
 
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(0, 8, 'Generated on: ' . date('Y-m-d'), 0, 1, 'C');
-    $pdf->Ln(8);
+    
 
     // Table headers
     $widths = [
