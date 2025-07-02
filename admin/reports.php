@@ -171,7 +171,7 @@ include('includes/dbc.php');
             <div class="card-body">
                 <div class="emoji">📊</div>
                 <h5 class="card-title">Final Division Report by bdget and year</h5>
-                <p class="card-text">Generate a yearly overview of the budget.</p>
+                <p class="card-text">Generate a comparison report of two budgets.</p>
             </div>
         </div>
     </div>
