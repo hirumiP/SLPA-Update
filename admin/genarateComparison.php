@@ -179,45 +179,6 @@ $pdf->Cell(0, 10, $report_title, 0, 1, 'C');
 ?>
 
 
-<form method="post">
-    <label for="year">Select Year (Budget 1):</label>
-    <select name="year" id="year" required>
-        <?php
-        mysqli_data_seek($year_result, 0);
-        while ($row = mysqli_fetch_assoc($year_result)) {
-            echo "<option value='" . htmlspecialchars($row['year']) . "'>" . htmlspecialchars($row['year']) . "</option>";
-        }
-        ?>
-    </select>
-
-    <label for="budget_id">Select Budget (Budget 1):</label>
-    <select name="budget_id" id="budget_id" required>
-        <option value="1">First Round</option>
-        <option value="2">Revised</option>
-    </select>
-
-    <label for="year2">Select Year (Budget 2, optional):</label>
-    <select name="year2" id="year2">
-        <option value="">None</option>
-        <?php
-        mysqli_data_seek($year_result, 0);
-        while ($row = mysqli_fetch_assoc($year_result)) {
-            echo "<option value='" . htmlspecialchars($row['year']) . "'>" . htmlspecialchars($row['year']) . "</option>";
-        }
-        ?>
-    </select>
-
-    <label for="budget_id2">Select Budget (Budget 2, optional):</label>
-    <select name="budget_id2" id="budget_id2">
-        <option value="">None</option>
-        <option value="1">First Round</option>
-        <option value="2">Revised</option>
-    </select>
-
-    <button type="submit" name="generate_report">Generate Report</button>
-</form>
-
-
 
 
 <!DOCTYPE html>
