@@ -89,24 +89,24 @@ if (isset($_POST['generate_report'])) {
 
     // Table headers
     $widths = [
-        'head_code' => 25,
-        'description' => 55,
-        'qty' => 15,
+        'head_code' => 33,
+        'description' => 53,
+        'qty' => 12,
         'cost1' => 25,
-        'est_cost1' => 25,
+        'est_cost1' => 24,
         'cost2' => 25,
-        'est_cost2' => 25
+        'est_cost2' => 24
     ];
 
     $pdf->SetFont('Arial', 'B', 8);
     $pdf->SetFillColor(200, 220, 255);
-    $pdf->Cell($widths['head_code'], 6, 'Head of Account Codes', 1, 0, 'C', true);
-    $pdf->Cell($widths['description'], 6, 'Description', 1, 0, 'C', true);
-    $pdf->Cell($widths['qty'], 6, 'Qty', 1, 0, 'C', true);
-    $pdf->Cell($widths['cost1'], 6, "$selected_year - $budget_label1", 1, 0, 'C', true);
-    $pdf->Cell($widths['est_cost1'], 6, "Est. Cost", 1, 0, 'C', true);
-    $pdf->Cell($widths['cost2'], 6, "$selected_year2 - $budget_label2", 1, 0, 'C', true);
-    $pdf->Cell($widths['est_cost2'], 6, "Est. Cost", 1, 1, 'C', true);
+    $pdf->Cell($widths['head_code'], 7, 'Head of Account Codes', 1, 0, 'C', true);
+    $pdf->Cell($widths['description'], 7, 'Description', 1, 0, 'C', true);
+    $pdf->Cell($widths['qty'], 7, 'Qty', 1, 0, 'C', true);
+    $pdf->Cell($widths['cost1'], 7, "$selected_year - $budget_label1", 1, 0, 'C', true);
+    $pdf->Cell($widths['est_cost1'], 7, "Est. Cost", 1, 0, 'C', true);
+    $pdf->Cell($widths['cost2'], 7, "$selected_year2 - $budget_label2", 1, 0, 'C', true);
+    $pdf->Cell($widths['est_cost2'], 7, "Est. Cost", 1, 1, 'C', true);
 
     $pdf->SetFont('Arial', '', 8);
     $current_division = '';
@@ -156,13 +156,13 @@ if (isset($_POST['generate_report'])) {
             $pdf->SetFont('Arial', '', 8);
         }
 
-        $pdf->Cell($widths['head_code'], 6, '', 1, 0, 'C');
-        $pdf->Cell($widths['description'], 6, utf8_decode($row['item_name']), 1, 0, 'L');
-        $pdf->Cell($widths['qty'], 6, $row['quantity'], 1, 0, 'C');
-        $pdf->Cell($widths['cost1'], 6, $row['cost1'] ? number_format($row['cost1'], 2) : '', 1, 0, 'R');
-        $pdf->Cell($widths['est_cost1'], 6, $row['est_cost1'] ? number_format($row['est_cost1'], 2) : '', 1, 0, 'R');
-        $pdf->Cell($widths['cost2'], 6, $row['cost2'] ? number_format($row['cost2'], 2) : '', 1, 0, 'R');
-        $pdf->Cell($widths['est_cost2'], 6, $row['est_cost2'] ? number_format($row['est_cost2'], 2) : '', 1, 1, 'R');
+        $pdf->Cell($widths['head_code'], 5, '', 1, 0, 'C');
+        $pdf->Cell($widths['description'], 5, utf8_decode($row['item_name']), 1, 0, 'L');
+        $pdf->Cell($widths['qty'], 5, $row['quantity'], 1, 0, 'C');
+        $pdf->Cell($widths['cost1'], 5, $row['cost1'] ? number_format($row['cost1'], 2) : '', 1, 0, 'R');
+        $pdf->Cell($widths['est_cost1'], 5, $row['est_cost1'] ? number_format($row['est_cost1'], 2) : '', 1, 0, 'R');
+        $pdf->Cell($widths['cost2'], 5, $row['cost2'] ? number_format($row['cost2'], 2) : '', 1, 0, 'R');
+        $pdf->Cell($widths['est_cost2'], 5, $row['est_cost2'] ? number_format($row['est_cost2'], 2) : '', 1, 1, 'R');
     }
 
     $pdf->Ln(8);
