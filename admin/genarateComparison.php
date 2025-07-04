@@ -18,52 +18,56 @@ if (isset($_POST['generate_report'])) {
     // Budget 1 data
     $sql1 = "
         SELECT ir.division, ir.item_code, i.name AS item_name, ir.unit_price, ir.quantity,
-               (ir.quantity * ir.unit_price) AS total_cost
+               (ir.quantity * ir.unit_price) AS total_cost,
+               (ir.quantity * ir.unit_price * 1.10) AS estimated_cost  -- Example: estimated cost = 10% more than total_cost
         FROM item_requests ir
         LEFT JOIN items i ON ir.item_code = i.item_code
         WHERE ir.year = '$selected_year' AND ir.budget_id = '$selected_budget_id'
         ORDER BY ir.division, i.name
     ";
     $result1 = mysqli_query($connect, $sql1) or die("Query 1 failed: " . mysqli_error($connect));
-    $data1 = []; $total_budget = 0; $i = 0;
+    $data1 = []; $total_budget = 0; $total_estimated1 = 0; $i = 0;
     while ($row = mysqli_fetch_assoc($result1)) {
-        $key = 'B1_' . $i++;
-        $data1[$key] = [
-            'division' => $row['division'],
-            'item_code' => $row['item_code'],
-            'item_name' => $row['item_name'],
-            'unit_price' => $row['unit_price'],
-            'quantity' => $row['quantity'],
-            'total_cost' => $row['total_cost']
-        ];
-        $total_budget += $row['total_cost'];
-    }
-
+    $key = 'B1_' . $i++;
+    $data1[$key] = [
+        'division' => $row['division'],
+        'item_code' => $row['item_code'],
+        'item_name' => $row['item_name'],
+        'unit_price' => $row['unit_price'],
+        'quantity' => $row['quantity'],
+        'total_cost' => $row['total_cost'],
+        'estimated_cost' => $row['total_cost']  // duplicate value here
+    ];
+    $total_budget += $row['total_cost'];
+    $total_estimated1 += $row['total_cost'];  // sum duplicates for totals
+}
     // Budget 2 data
-    $data2 = []; $total_budget2 = 0; $i = 0;
+    $data2 = []; $total_budget2 = 0; $total_estimated2 = 0; $i = 0;
     if ($selected_year2 && $selected_budget_id2) {
         $sql2 = "
             SELECT ir.division, ir.item_code, i.name AS item_name, ir.unit_price, ir.quantity,
-                   (ir.quantity * ir.unit_price) AS total_cost
+                   (ir.quantity * ir.unit_price) AS total_cost,
+                   (ir.quantity * ir.unit_price * 1.10) AS estimated_cost
             FROM item_requests ir
             LEFT JOIN items i ON ir.item_code = i.item_code
             WHERE ir.year = '$selected_year2' AND ir.budget_id = '$selected_budget_id2'
             ORDER BY ir.division, i.name
         ";
         $result2 = mysqli_query($connect, $sql2) or die("Query 2 failed: " . mysqli_error($connect));
-        while ($row = mysqli_fetch_assoc($result2)) {
-            $key = 'B2_' . $i++;
-            $data2[$key] = [
-                'division' => $row['division'],
-                'item_code' => $row['item_code'],
-                'item_name' => $row['item_name'],
-                'unit_price' => $row['unit_price'],
-                'quantity' => $row['quantity'],
-                'total_cost' => $row['total_cost']
-            ];
-            $total_budget2 += $row['total_cost'];
-        }
-    }
+       while ($row = mysqli_fetch_assoc($result2)) {
+    $key = 'B2_' . $i++;
+    $data2[$key] = [
+        'division' => $row['division'],
+        'item_code' => $row['item_code'],
+        'item_name' => $row['item_name'],
+        'unit_price' => $row['unit_price'],
+        'quantity' => $row['quantity'],
+        'total_cost' => $row['total_cost'],
+        'estimated_cost' => $row['total_cost']  // duplicate value here
+    ];
+    $total_budget2 += $row['total_cost'];
+    $total_estimated2 += $row['total_cost'];  // sum duplicates for totals
+}    }
 
     // PDF Generation
     $pdf = new FPDF('P', 'mm', 'A4');
@@ -84,16 +88,16 @@ if (isset($_POST['generate_report'])) {
     }
     $pdf->Ln(3);
 
-    
-
-    // Table headers
+    // Table headers - add two new columns for estimated costs
     $widths = [
-        'head_code' => 34,
+        'head_code' => 25,
         'description' => 45,
         'qty1' => 15,
         'qty2' => 15,
-        'cost1' => 30,
-        'cost2' => 30
+        'cost1' => 25,
+        'est_cost1' => 30,
+        'cost2' => 25,
+        'est_cost2' => 30
     ];
 
     $pdf->SetFont('Arial', 'B', 8);
@@ -103,7 +107,9 @@ if (isset($_POST['generate_report'])) {
     $pdf->Cell($widths['qty1'], 6, "Qty $selected_year", 1, 0, 'C', true);
     $pdf->Cell($widths['qty2'], 6, "Qty $selected_year2", 1, 0, 'C', true);
     $pdf->Cell($widths['cost1'], 6, "$selected_year - $budget_label1", 1, 0, 'C', true);
-    $pdf->Cell($widths['cost2'], 6, "$selected_year2 - $budget_label2", 1, 1, 'C', true);
+    $pdf->Cell($widths['est_cost1'], 6, "Total Estimated Cost", 1, 0, 'C', true);
+    $pdf->Cell($widths['cost2'], 6, "$selected_year2 - $budget_label2", 1, 0, 'C', true);
+    $pdf->Cell($widths['est_cost2'], 6, "Total Estimated Cost", 1, 1, 'C', true);
 
     $pdf->SetFont('Arial', '', 8);
     $current_division = '';
@@ -116,7 +122,9 @@ if (isset($_POST['generate_report'])) {
             'qty1' => $row['quantity'],
             'qty2' => '',
             'cost1' => $row['total_cost'],
-            'cost2' => ''
+            'est_cost1' => $row['estimated_cost'],
+            'cost2' => '',
+            'est_cost2' => ''
         ];
     }
     foreach ($data2 as $row) {
@@ -126,7 +134,9 @@ if (isset($_POST['generate_report'])) {
             'qty1' => '',
             'qty2' => $row['quantity'],
             'cost1' => '',
-            'cost2' => $row['total_cost']
+            'est_cost1' => '',
+            'cost2' => $row['total_cost'],
+            'est_cost2' => $row['estimated_cost']
         ];
     }
 
@@ -145,8 +155,8 @@ if (isset($_POST['generate_report'])) {
                 utf8_decode(" $current_division"),
                 1, 0, 'L', true
             );
-            $pdf->Cell($widths['cost1'], 8, '', 1, 0, 'C', true);
-            $pdf->Cell($widths['cost2'], 8, '', 1, 1, 'C', true);
+            $pdf->Cell($widths['cost1'] + $widths['est_cost1'], 8, '', 1, 0, 'C', true);
+            $pdf->Cell($widths['cost2'] + $widths['est_cost2'], 8, '', 1, 1, 'C', true);
             $pdf->SetFont('Arial', '', 8);
         }
 
@@ -155,20 +165,62 @@ if (isset($_POST['generate_report'])) {
         $pdf->Cell($widths['qty1'], 6, $row['qty1'], 1, 0, 'C');
         $pdf->Cell($widths['qty2'], 6, $row['qty2'], 1, 0, 'C');
         $pdf->Cell($widths['cost1'], 6, $row['cost1'] ? number_format($row['cost1'], 2) : '', 1, 0, 'R');
-        $pdf->Cell($widths['cost2'], 6, $row['cost2'] ? number_format($row['cost2'], 2) : '', 1, 1, 'R');
+        $pdf->Cell($widths['est_cost1'], 6, $row['est_cost1'] ? number_format($row['est_cost1'], 2) : '', 1, 0, 'R');
+        $pdf->Cell($widths['cost2'], 6, $row['cost2'] ? number_format($row['cost2'], 2) : '', 1, 0, 'R');
+        $pdf->Cell($widths['est_cost2'], 6, $row['est_cost2'] ? number_format($row['est_cost2'], 2) : '', 1, 1, 'R');
     }
 
     $pdf->Ln(8);
     $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(0, 6, 'Overall Total Budget (Budget 1): LKR ' . number_format($total_budget, 2), 0, 1, 'R');
-    if ($selected_year2 && $selected_budget_id2) {
-        $pdf->Cell(0, 6, 'Overall Total Budget (Budget 2): LKR ' . number_format($total_budget2, 2), 0, 1, 'R');
-    }
+    // $pdf->Cell(0, 6, 'Overall Total Budget (Budget 1): LKR ' . number_format($total_budget, 2), 0, 1, 'R');
+    // $pdf->Cell(0, 6, 'Overall Total Estimated Cost (Budget 1): LKR ' . number_format($total_estimated1, 2), 0, 1, 'R');
+    // if ($selected_year2 && $selected_budget_id2) {
+    //     $pdf->Cell(0, 6, 'Overall Total Budget (Budget 2): LKR ' . number_format($total_budget2, 2), 0, 1, 'R');
+    //     $pdf->Cell(0, 6, 'Overall Total Estimated Cost (Budget 2): LKR ' . number_format($total_estimated2, 2), 0, 1, 'R');
+    // }
 
     $pdf->Output();
-    exit;
 }
 ?>
+
+<form method="post">
+    <label for="year">Select Year (Budget 1):</label>
+    <select name="year" id="year" required>
+        <?php
+        mysqli_data_seek($year_result, 0);
+        while ($row = mysqli_fetch_assoc($year_result)) {
+            echo "<option value='" . htmlspecialchars($row['year']) . "'>" . htmlspecialchars($row['year']) . "</option>";
+        }
+        ?>
+    </select>
+
+    <label for="budget_id">Select Budget (Budget 1):</label>
+    <select name="budget_id" id="budget_id" required>
+        <option value="1">First Round</option>
+        <option value="2">Revised</option>
+    </select>
+
+    <label for="year2">Select Year (Budget 2, optional):</label>
+    <select name="year2" id="year2">
+        <option value="">None</option>
+        <?php
+        mysqli_data_seek($year_result, 0);
+        while ($row = mysqli_fetch_assoc($year_result)) {
+            echo "<option value='" . htmlspecialchars($row['year']) . "'>" . htmlspecialchars($row['year']) . "</option>";
+        }
+        ?>
+    </select>
+
+    <label for="budget_id2">Select Budget (Budget 2, optional):</label>
+    <select name="budget_id2" id="budget_id2">
+        <option value="">None</option>
+        <option value="1">First Round</option>
+        <option value="2">Revised</option>
+    </select>
+
+    <button type="submit" name="generate_report">Generate Report</button>
+</form>
+
 
 
 
