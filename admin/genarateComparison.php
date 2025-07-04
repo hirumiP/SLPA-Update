@@ -264,6 +264,13 @@ if (isset($_POST['generate_report'])) {
     input[type="submit"]:hover {
         background: linear-gradient(to right, #004a99, #0066cc);
     }
+    td {
+  word-wrap: break-word;
+  white-space: normal;
+  overflow-wrap: break-word;
+  max-width: 200px; /* adjust as needed */
+}
+
 </style>
 </head>
 <body>
