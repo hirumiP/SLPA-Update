@@ -5,6 +5,7 @@ include('includes/dbc.php');
 if (isset($_POST['generate_report'])) {
     $selected_division = $_POST['division'];
     $selected_year = $_POST['year'];
+    $selected_budget_id = $_POST['budget_id'];
 
     $sql = "
     SELECT 
@@ -14,16 +15,19 @@ if (isset($_POST['generate_report'])) {
         ir.quantity, 
         ir.description, 
         ir.remark,
+        ir.budget_id,
         (ir.quantity * ir.unit_price) AS total_cost
     FROM 
         item_requests ir
     LEFT JOIN 
         items i ON ir.item_code = i.item_code
     WHERE 
-        ir.division = '$selected_division' AND ir.year = '$selected_year'
+        ir.division = '$selected_division' 
+        AND ir.year = '$selected_year'
+        AND ir.budget_id = '$selected_budget_id'
     ORDER BY 
         ir.division
-";
+    ";
 
     $result = mysqli_query($connect, $sql);
     if (!$result) {
@@ -42,43 +46,25 @@ if (isset($_POST['generate_report'])) {
 
         function NbLines($w, $txt) {
             $cw = &$this->CurrentFont['cw'];
-            if ($w == 0)
-                $w = $this->w - $this->rMargin - $this->x;
+            if ($w == 0) $w = $this->w - $this->rMargin - $this->x;
             $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
             $s = str_replace("\r", '', $txt);
             $nb = strlen($s);
-            if ($nb > 0 and $s[$nb - 1] == "\n")
-                $nb--;
-            $sep = -1;
-            $i = 0;
-            $j = 0;
-            $l = 0;
-            $nl = 1;
+            if ($nb > 0 and $s[$nb - 1] == "\n") $nb--;
+            $sep = -1; $i = 0; $j = 0; $l = 0; $nl = 1;
             while ($i < $nb) {
                 $c = $s[$i];
                 if ($c == "\n") {
-                    $i++;
-                    $sep = -1;
-                    $j = $i;
-                    $l = 0;
-                    $nl++;
-                    continue;
+                    $i++; $sep = -1; $j = $i; $l = 0; $nl++; continue;
                 }
-                if ($c == ' ')
-                    $sep = $i;
+                if ($c == ' ') $sep = $i;
                 $l += $cw[$c];
                 if ($l > $wmax) {
                     if ($sep == -1) {
-                        if ($i == $j)
-                            $i++;
-                    } else
-                        $i = $sep + 1;
-                    $sep = -1;
-                    $j = $i;
-                    $l = 0;
-                    $nl++;
-                } else
-                    $i++;
+                        if ($i == $j) $i++;
+                    } else $i = $sep + 1;
+                    $sep = -1; $j = $i; $l = 0; $nl++;
+                } else $i++;
             }
             return $nl;
         }
@@ -90,20 +76,14 @@ if (isset($_POST['generate_report'])) {
                 if ($lines > $nb) $nb = $lines;
             }
             $h = 5 * $nb;
-
             $this->CheckPageBreak($h);
-
             for ($i = 0; $i < count($data); $i++) {
                 $w = $this->col_widths[$i];
                 $a = isset($aligns[$i]) ? $aligns[$i] : 'L';
-
                 $x = $this->GetX();
                 $y = $this->GetY();
-
                 $this->Rect($x, $y, $w, $h);
-
                 $this->MultiCell($w, 5, $data[$i], 0, $a);
-
                 $this->SetXY($x + $w, $y);
             }
             $this->Ln($h);
@@ -121,7 +101,8 @@ if (isset($_POST['generate_report'])) {
     $pdf->SetFont('Arial', 'B', 16);
     $pdf->Cell(0, 10, 'SLPA Budget Management 2025', 0, 1, 'C');
     $pdf->Ln(3);
-    $pdf->Cell(0, 10, "Division Report: $selected_division for $selected_year", 0, 1, 'C');
+    $budget_label = $selected_budget_id == 1 ? "First Round" : ($selected_budget_id == 2 ? "Revised" : "Unknown");
+    $pdf->Cell(0, 10, "Division Report: $selected_division for $selected_year ($budget_label)", 0, 1, 'C');
     $pdf->Ln(3);
     $pdf->SetFont('Arial', '', 10);
     $pdf->Cell(0, 8, 'Generated on: ' . date('Y-m-d'), 0, 1, 'C');
@@ -141,42 +122,35 @@ if (isset($_POST['generate_report'])) {
         'Justification Report',
         'Remark'
     ];
-
-    // Print header row
     $pdf->Row($headers, ['C', 'C', 'C', 'C', 'L', 'R', 'C', 'L', 'L']);
 
-    // Print numbering row: [1], [2], ...
     $numbers = [];
     for ($i = 1; $i <= count($headers); $i++) {
         $numbers[] = "[$i]";
     }
-    // Center align all numbering cells
     $pdf->SetFont('Arial', 'I', 8);
     $pdf->Row($numbers, array_fill(0, count($headers), 'C'));
 
-    // Reset font for data
     $pdf->SetFont('Arial', '', 8);
-
     foreach ($data as $row) {
         $rowData = [
-            '',                     // Budget Responsibility Code (empty)
-            '',                     // Cost Centre Code (empty)
-            '',                     // C.E.P / Budget Number (empty)
+            '',
+            '',
+            '',
             $row['quantity'],
             $row['item_name'],
             number_format($row['total_cost'], 2),
-            '',                     // Allocation Required (empty)
+            '',
             $row['description'],
             $row['remark']
         ];
         $aligns = ['L', 'L', 'L', 'C', 'L', 'R', 'L', 'L', 'L'];
-
         $pdf->Row($rowData, $aligns);
     }
 
     $pdf->Ln(5);
     $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(0, 8, "Total for $selected_division in $selected_year: LKR " . number_format($total_budget, 2), 0, 1, 'R');
+    $pdf->Cell(0, 8, "Total for $selected_division in $selected_year (Budget ID: $selected_budget_id): LKR " . number_format($total_budget, 2), 0, 1, 'R');
 
     $pdf->Ln(5);
     $pdf->SetFont('Arial', 'I', 9);
@@ -248,6 +222,7 @@ if (isset($_POST['generate_report'])) {
 <body>
     <form method="POST" target="_blank">
         <h1>Generate Division Report</h1>
+
         <label for="division">Select Division:</label>
         <select name="division" id="division" required>
             <option value="">-- Select Division --</option>
@@ -271,6 +246,20 @@ if (isset($_POST['generate_report'])) {
             } 
             ?>
         </select>
+
+       <label for="budget">Select Budget:</label>
+<select name="budget_id" id="budget" required>
+    <option value="">-- Select Budget --</option>
+    <?php 
+    $budget_query = "SELECT DISTINCT budget_id FROM item_requests ORDER BY budget_id";
+    $budget_result = mysqli_query($connect, $budget_query);
+    while ($row = mysqli_fetch_assoc($budget_result)) {
+        $label = $row['budget_id'] == 1 ? "First Round" : ($row['budget_id'] == 2 ? "Revised" : "Unknown");
+        echo "<option value='{$row['budget_id']}'>{$label}</option>";
+    } 
+    ?>
+</select>
+
 
         <button type="submit" name="generate_report">Generate Report</button>
     </form>
