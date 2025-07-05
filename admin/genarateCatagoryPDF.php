@@ -199,7 +199,7 @@ if (isset($_POST['generate_report'])) {
     $pdf->Cell(0, 5, 'End of Report', 0, 1, 'C');
 
     // Output
-    $pdf->Output();
+    $pdf->Output('I', 'RequestedItemsReport.pdf');
     exit;
 }
 ?>
@@ -258,7 +258,7 @@ if (isset($_POST['generate_report'])) {
 </style>
 </head>
 <body>
-<form action="" method="post" autocomplete="off">
+<form action="" method="post" autocomplete="off" target="_blank">
     <h1>All Divisions Block Allocation</h1>
     
     <label for="year">Select Year 1</label>
