@@ -22,7 +22,6 @@ if (isset($_POST['generate_report'])) {
             ir.unit_price, 
             ir.quantity, 
             ir.reason, 
-            ir.description, 
             (ir.quantity * ir.unit_price) AS total_cost
         FROM 
             item_requests ir
@@ -75,22 +74,20 @@ if (isset($_POST['generate_report'])) {
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->SetFillColor(200, 220, 255); // Header background color
 
-    // Column widths (sum = 230)
+    // Updated column widths (sum ~230)
     $widths = [
-        'division' => 80,
-        'item_name' => 40,
+        'division'   => 90,
+        'item_name'  => 50,
         'unit_price' => 30,
-        'quantity' => 20,
-        'description' => 50,
-        'total_cost' => 30,
+        'quantity'   => 20,
+        'total_cost' => 40,
     ];
 
-    // Header cells centered
+    // Header cells centered (without Description)
     $pdf->Cell($widths['division'], 6, 'Division', 1, 0, 'C', true);
     $pdf->Cell($widths['item_name'], 6, 'Item Name', 1, 0, 'C', true);
     $pdf->Cell($widths['unit_price'], 6, 'Unit Price', 1, 0, 'C', true);
     $pdf->Cell($widths['quantity'], 6, 'Quantity', 1, 0, 'C', true);
-    $pdf->Cell($widths['description'], 6, 'Description', 1, 0, 'C', true);
     $pdf->Cell($widths['total_cost'], 6, 'Total Cost', 1, 1, 'C', true);
 
     // Table Data
@@ -113,12 +110,11 @@ if (isset($_POST['generate_report'])) {
             $current_division = $row['division'];
         }
 
-        // Add row data
+        // Add row data without description column
         $pdf->Cell($widths['division'], 6, utf8_decode($row['division']), 1, 0, 'C');
         $pdf->Cell($widths['item_name'], 6, utf8_decode($row['item_name']), 1, 0, 'L');
         $pdf->Cell($widths['unit_price'], 6, number_format($row['unit_price'], 2), 1, 0, 'R');
         $pdf->Cell($widths['quantity'], 6, $row['quantity'], 1, 0, 'C');
-        $pdf->Cell($widths['description'], 6, utf8_decode($row['description']), 1, 0, 'L');
         $pdf->Cell($widths['total_cost'], 6, number_format($row['total_cost'], 2), 1, 1, 'R');
     }
 
@@ -137,7 +133,6 @@ if (isset($_POST['generate_report'])) {
     $pdf->Ln(8);
     $pdf->SetFont('Arial', 'I', 9);
     
-
     // Output the generated PDF
     $pdf->Output();
 }
