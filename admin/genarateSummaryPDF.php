@@ -140,10 +140,10 @@ if (isset($_POST['generate_report'])) {
     $pdf->SetX($offset);
     $pdf->row($headers, array_fill(0, 9, 'C'));
 
-    $pdf->SetFont('Arial', 'I', 6);
-    $pdf->SetFillColor(240, 240, 240);
-    $pdf->SetX($offset);
-    $pdf->row(array_map(fn($i) => '[' . $i . ']', range(1, 9)), array_fill(0, 9, 'C'));
+    // $pdf->SetFont('Arial', 'I', 6);
+    // $pdf->SetFillColor(240, 240, 240);
+    // $pdf->SetX($offset);
+    // $pdf->row(array_map(fn($i) => '[' . $i . ']', range(1, 9)), array_fill(0, 9, 'C'));
 
     $pdf->SetFont('Arial', '', 8);
     foreach ($categories as $cat) {
