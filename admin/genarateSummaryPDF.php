@@ -147,16 +147,20 @@ if (isset($_POST['generate_report'])) {
 
     $pdf->SetFont('Arial', '', 8);
     foreach ($categories as $cat) {
-        $pdf->SetX($offset);
-        $pdf->row([
-            '', '', '',
-            $cat['total_qty'],
-            $cat['category_name'],
-            '',
-            number_format($cat['total_cost'], 2),
-            '', ''
-        ], ['C','C','C','C','L','L','R','L','L']);
+    if ($cat['total_qty'] == 0 && $cat['total_cost'] == 0) {
+        continue; // Skip empty categories
     }
+    $pdf->SetX($offset);
+    $pdf->row([
+        '', '', '',
+        $cat['total_qty'],
+        $cat['category_name'],
+        '',
+        number_format($cat['total_cost'], 2),
+        '', ''
+    ], ['C','C','C','C','L','L','R','L','L']);
+}
+
 
     $grand_total = array_sum(array_column($categories, 'total_cost'));
     $pdf->SetFont('Arial', 'B', 8);
