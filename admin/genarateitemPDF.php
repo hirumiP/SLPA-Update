@@ -2,22 +2,23 @@
 require('./fpdf/fpdf.php');
 include('includes/dbc.php');
 
-// Fetch unique years for the dropdown
+// Fetch unique years for the dropdown from the 'year' column
 $year_query = "SELECT DISTINCT year FROM item_requests ORDER BY year";
 $year_result = mysqli_query($connect, $year_query);
 if (!$year_result) {
     die("Year query failed: " . mysqli_error($connect));
 }
 
-// Handle form submission
+// Handle the form submission
 if (isset($_POST['generate_report'])) {
-    $selected_year = $_POST['year'];
+    $selected_year = $_POST['year']; // Get the selected year
 
-    // Query data with category code
+    // SQL query to fetch the required data for the selected year, ordered by category_code, item name
     $sql = "
         SELECT 
             i.name AS item_name, 
             i.category_code,
+            c.description AS category_description,
             ir.division, 
             ir.unit_price, 
             ir.quantity, 
@@ -27,6 +28,8 @@ if (isset($_POST['generate_report'])) {
             item_requests ir
         LEFT JOIN 
             items i ON ir.item_code = i.item_code
+        LEFT JOIN
+            categories c ON i.category_code = c.category_code
         WHERE 
             ir.year = '$selected_year'
         ORDER BY 
@@ -38,37 +41,58 @@ if (isset($_POST['generate_report'])) {
         die("Query failed: " . mysqli_error($connect));
     }
 
+    // Group data by category_description -> items -> rows
     $data = [];
     $category_totals = [];
-    $item_totals = [];
     $total_budget = 0;
 
     while ($row = mysqli_fetch_assoc($result)) {
-        $category = $row['category_code'];
-        $item = $row['item_name'];
+        $category_code = $row['category_code'];
+        $category_desc = $row['category_description'] ?? 'Uncategorized';
+        $item_name = $row['item_name'];
 
-        $data[$category][$item][] = $row;
-
-        if (!isset($item_totals[$item])) {
-            $item_totals[$item] = ['total_quantity' => 0, 'total_cost' => 0];
+        // Initialize category group if not set
+        if (!isset($data[$category_code])) {
+            $data[$category_code] = [
+                'description' => $category_desc,
+                'items' => [],
+            ];
+            $category_totals[$category_code] = [
+                'total_quantity' => 0,
+                'total_cost' => 0
+            ];
         }
-        $item_totals[$item]['total_quantity'] += $row['quantity'];
-        $item_totals[$item]['total_cost'] += $row['total_cost'];
 
-        if (!isset($category_totals[$category])) {
-            $category_totals[$category] = ['total_quantity' => 0, 'total_cost' => 0];
+        // Initialize item group if not set
+        if (!isset($data[$category_code]['items'][$item_name])) {
+            $data[$category_code]['items'][$item_name] = [
+                'rows' => [],
+                'total_quantity' => 0,
+                'total_cost' => 0,
+            ];
         }
-        $category_totals[$category]['total_quantity'] += $row['quantity'];
-        $category_totals[$category]['total_cost'] += $row['total_cost'];
 
-        $total_budget += $row['total_cost'];
+        // Add row
+        $data[$category_code]['items'][$item_name]['rows'][] = $row;
+
+        // Accumulate totals
+        $qty = $row['quantity'];
+        $cost = $row['total_cost'];
+
+        $data[$category_code]['items'][$item_name]['total_quantity'] += $qty;
+        $data[$category_code]['items'][$item_name]['total_cost'] += $cost;
+
+        $category_totals[$category_code]['total_quantity'] += $qty;
+        $category_totals[$category_code]['total_cost'] += $cost;
+
+        $total_budget += $cost;
     }
 
-    // Start PDF
+    // Create a new PDF in landscape mode
     $pdf = new FPDF('L', 'mm', 'A4');
     $pdf->AddPage();
 
-    // Header
+    // Title Section
     $pdf->SetFont('Arial', 'B', 16);
     $pdf->Cell(0, 10, 'SLPA Budget Management', 0, 1, 'C');
     $pdf->Ln(5);
@@ -78,27 +102,28 @@ if (isset($_POST['generate_report'])) {
     $pdf->Cell(0, 8, 'Generated on: ' . date('Y-m-d'), 0, 1, 'C');
     $pdf->Ln(8);
 
-    // Table Header
-    $pdf->SetFont('Arial', 'B', 10);
-    $pdf->SetFillColor(200, 220, 255);
     $rowHeight = 6;
-    $pdf->Cell(70, $rowHeight, 'Item Name', 1, 0, 'C', true);
-    $pdf->Cell(75, $rowHeight, 'Division', 1, 0, 'C', true);
-    $pdf->Cell(30, $rowHeight, 'Unit Price', 1, 0, 'C', true);
-    $pdf->Cell(25, $rowHeight, 'Quantity', 1, 0, 'C', true);
-    $pdf->Cell(35, $rowHeight, 'Total Cost (LKR)', 1, 1, 'C', true);
 
-    $pdf->SetFont('Arial', '', 9);
+    foreach ($data as $category_code => $category_data) {
+        // Category header row
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->SetFillColor(200, 230, 255);
+        $pdf->Cell(235, $rowHeight, "Category: " . $category_data['description'], 1, 1, 'L', true);
 
-    foreach ($data as $category_code => $items) {
-        // Category Title
+        // Table Header
         $pdf->SetFont('Arial', 'B', 10);
-        $pdf->SetFillColor(220, 240, 255);
-        $pdf->Cell(235, $rowHeight, "Category: $category_code", 1, 1, 'L', true);
-        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetFillColor(200, 220, 255);
+        $pdf->Cell(70, $rowHeight, 'Item Name', 1, 0, 'C', true);
+        $pdf->Cell(75, $rowHeight, 'Division', 1, 0, 'C', true);
+        $pdf->Cell(30, $rowHeight, 'Unit Price', 1, 0, 'C', true);
+        $pdf->Cell(25, $rowHeight, 'Quantity', 1, 0, 'C', true);
+        $pdf->Cell(35, $rowHeight, 'Total Cost (LKR)', 1, 1, 'C', true);
 
-        foreach ($items as $item_name => $rows) {
-            foreach ($rows as $row) {
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetFillColor(255, 255, 255);
+
+        foreach ($category_data['items'] as $item_name => $item_data) {
+            foreach ($item_data['rows'] as $row) {
                 $pdf->Cell(70, $rowHeight, $row['item_name'], 1, 0, 'L');
                 $pdf->Cell(75, $rowHeight, $row['division'], 1, 0, 'L');
                 $pdf->Cell(30, $rowHeight, number_format($row['unit_price'], 2), 1, 0, 'R');
@@ -106,38 +131,27 @@ if (isset($_POST['generate_report'])) {
                 $pdf->Cell(35, $rowHeight, number_format($row['total_cost'], 2), 1, 1, 'R');
             }
 
-            // Item subtotal
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->SetFillColor(255, 255, 204);
-            $pdf->Cell(70, $rowHeight, '', 1, 0, 'L', true);
-            $pdf->Cell(75, $rowHeight, 'Total for ' . $item_name, 1, 0, 'R', true);
-            $pdf->Cell(30, $rowHeight, '', 1, 0, 'R', true);
-            $pdf->Cell(25, $rowHeight, number_format($item_totals[$item_name]['total_quantity'], 0), 1, 0, 'C', true);
-            $pdf->Cell(35, $rowHeight, number_format($item_totals[$item_name]['total_cost'], 2), 1, 1, 'R', true);
-            $pdf->Ln(1);
-            $pdf->SetFont('Arial', '', 9);
+            
         }
 
-        // Category subtotal
+        // Category total row
         $pdf->SetFont('Arial', 'B', 10);
-        $pdf->SetFillColor(204, 255, 204);
-        $pdf->Cell(175, $rowHeight, "Subtotal for Category $category_code", 1, 0, 'R', true);
+        $pdf->SetFillColor(200, 230, 255);
+        $pdf->Cell(175, $rowHeight, 'Total for ' . $category_data['description'], 1, 0, 'R', true);
         $pdf->Cell(25, $rowHeight, number_format($category_totals[$category_code]['total_quantity'], 0), 1, 0, 'C', true);
         $pdf->Cell(35, $rowHeight, number_format($category_totals[$category_code]['total_cost'], 2), 1, 1, 'R', true);
-        $pdf->Ln(4);
-        $pdf->SetFont('Arial', '', 9);
+        $pdf->Ln(8);
     }
 
-    // Final Total
-    $pdf->Ln(8);
-    $pdf->SetFont('Arial', 'B', 11);
-    $pdf->Cell(0, 8, 'Overall Total Budget: LKR ' . number_format($total_budget, 2), 0, 1, 'R');
+    // Overall total budget
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 10, 'Overall Total Budget: LKR ' . number_format($total_budget, 2), 0, 1, 'R');
 
     $pdf->Output();
 }
 ?>
 
-<!-- HTML Form -->
+<!-- HTML Form Section -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -209,9 +223,11 @@ if (isset($_POST['generate_report'])) {
         <label for="year">Select Year:</label>
         <select name="year" id="year" required>
             <option value="">-- Select Year --</option>
-            <?php while ($row = mysqli_fetch_assoc($year_result)) {
+            <?php
+            while ($row = mysqli_fetch_assoc($year_result)) {
                 echo "<option value='{$row['year']}'>{$row['year']}</option>";
-            } ?>
+            }
+            ?>
         </select>
         <br>
         <button type="submit" name="generate_report">Generate Report</button>
