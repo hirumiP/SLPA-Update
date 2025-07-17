@@ -127,7 +127,7 @@ if (isset($_POST['generate_report'])) {
     // Title
     $headerTitle = "SLPA Budget Management - All Divisions Block Allocation (Requested Items)";
     if ($year1 && $budget1) $headerTitle .= " - Year $year1 (Budget $budget1)";
-    if ($year2 && $budget2) $headerTitle .= " vs Year $year2 (Budget $budget2)";
+    if ($year2 && $budget2) $headerTitle .= " & Year $year2 (Budget $budget2)";
     $pdf->SetFont('Arial', 'B', 11);
     $pdf->Cell(0, 8, $headerTitle, 0, 1, 'C');
     $pdf->Ln(2);
