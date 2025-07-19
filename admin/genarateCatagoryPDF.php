@@ -121,7 +121,7 @@ if (isset($_POST['generate_report'])) {
     $pdf->AddPage();
     $pdf->SetAutoPageBreak(true, 10);
 
-    $pdf->col_w = [15, 15, 15, 10, 30, 55, 25, 45, 25];
+    $pdf->col_w = [15, 15, 15, 10, 40, 55, 25, 40, 20];
     $offset = (297 - array_sum($pdf->col_w)) / 2;
 
     // Title
@@ -161,37 +161,43 @@ if (isset($_POST['generate_report'])) {
     // Rows
     $pdf->SetFont('Arial', '', 8);
     foreach ($categories as $cat) {
-        $isFirstItem = true;
-        foreach ($cat['items'] as $item) {
-            $pdf->SetX($offset);
-            $pdf->row([
-                '', '', '',                                 // BR, CC, CEP
-                $item['qty'],
-                $isFirstItem ? $cat['category_name'] : '',
-                $item['item_name'],
-                number_format($item['total_cost'], 2),
-                '', ''
-            ], ['C','C','C','C','L','L','R','L','L']);
+    $isFirstItem = true;
+    $category_total_qty = 0;
+    $category_total_cost = 0;
 
-            $isFirstItem = false;
-        }
+    foreach ($cat['items'] as $item) {
+        $category_total_qty += $item['qty'];
+        $category_total_cost += $item['total_cost'];
+
+        $pdf->SetX($offset);
+        $pdf->row([
+            '', '', '',                                 // BR, CC, CEP
+            $item['qty'],
+            $isFirstItem ? $cat['category_name'] : '',
+            $item['item_name'],
+            number_format($item['total_cost'], 2),
+            '', ''
+        ], ['C','C','C','C','L','L','R','L','L']);
+
+        $isFirstItem = false;
     }
 
-    // Total
-    $grand_total = 0;
-    foreach ($categories as $cat) {
-        foreach ($cat['items'] as $item) {
-            $grand_total += $item['total_cost'];
-        }
-    }
+    // Add category total row with total quantity in the Qty column
+$pdf->SetFont('Arial', 'B', 8);
+$pdf->SetFillColor(210, 230, 255); // light gray
+$pdf->SetX($offset);
+$pdf->row([
+    '', '', '',
+    $category_total_qty,
+    $cat['category_name'] . " Total",
+    '',
+    number_format($category_total_cost, 2),
+    '', ''
+], ['C','C','C','C','L','L','R','L','L']);
+$pdf->SetFont('Arial', '', 8); // Reset font
 
-    $pdf->SetFont('Arial', 'B', 8);
-    $pdf->SetX($offset);
-    $pdf->row([
-        '', '', '', '', '', 'Total Estimated Cost:',
-        number_format($grand_total, 2),
-        '', ''
-    ], ['C','C','C','C','L','R','R','L','L']);
+}
+
 
     // Footer
     $pdf->Ln(4);
