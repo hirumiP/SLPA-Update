@@ -170,6 +170,11 @@ if (isset($_POST['generate_report'])) {
 
     // Rows
     $pdf->SetFont('Arial', '', 8);
+
+    // Initialize grand totals before looping categories
+    $grand_total_qty = 0;
+    $grand_total_cost = 0;
+
     foreach ($categories as $cat) {
         $isFirstItem = true;
         $category_total_qty = 0;
@@ -205,7 +210,25 @@ if (isset($_POST['generate_report'])) {
             '', ''
         ], ['C','C','C','C','L','L','R','L','L']);
         $pdf->SetFont('Arial', '', 8); // Reset font
+
+        // Accumulate grand totals
+        $grand_total_qty += $category_total_qty;
+        $grand_total_cost += $category_total_cost;
     }
+
+    // --- ADD GRAND TOTAL ROW ---
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetFillColor(180, 200, 230); // slightly darker for grand total
+    $pdf->SetX($offset);
+    $pdf->row([
+        '', '', '',
+        $grand_total_qty,
+        "GRAND TOTAL",
+        '',
+        number_format($grand_total_cost, 2),
+        '', ''
+    ], ['C','C','C','C','L','L','R','L','L']);
+    $pdf->SetFont('Arial', '', 8);
 
     // Footer
     $pdf->Ln(4);
