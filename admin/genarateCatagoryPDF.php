@@ -45,11 +45,12 @@ if (isset($_POST['generate_report'])) {
         INNER JOIN items i ON r.item_code = i.item_code
         $where_clause
         GROUP BY i.item_code, i.name, i.category_code
+        HAVING total_quantity > 0
         ORDER BY i.category_code, i.item_code
     ";
     $item_rs = mysqli_query($connect, $item_q) or die("Item request query failed: " . mysqli_error($connect));
 
-    // Group data under categories
+    // Group data under categories and exclude zero quantity items (extra PHP check)
     $categories = [];
     while ($cat = mysqli_fetch_assoc($cat_rs)) {
         $categories[$cat['category_code']] = [
@@ -58,11 +59,20 @@ if (isset($_POST['generate_report'])) {
         ];
     }
     while ($it = mysqli_fetch_assoc($item_rs)) {
-        $categories[$it['category_code']]['items'][] = [
-            'item_name'   => $it['name'],
-            'qty'         => $it['total_quantity'],
-            'total_cost'  => $it['total_cost']
-        ];
+        if ($it['total_quantity'] > 0) {  // double check in PHP
+            $categories[$it['category_code']]['items'][] = [
+                'item_name'   => $it['name'],
+                'qty'         => $it['total_quantity'],
+                'total_cost'  => $it['total_cost']
+            ];
+        }
+    }
+
+    // Remove categories with no items
+    foreach ($categories as $code => $cat) {
+        if (empty($cat['items'])) {
+            unset($categories[$code]);
+        }
     }
 
     // -------------------------------------------------------------
@@ -161,43 +171,41 @@ if (isset($_POST['generate_report'])) {
     // Rows
     $pdf->SetFont('Arial', '', 8);
     foreach ($categories as $cat) {
-    $isFirstItem = true;
-    $category_total_qty = 0;
-    $category_total_cost = 0;
+        $isFirstItem = true;
+        $category_total_qty = 0;
+        $category_total_cost = 0;
 
-    foreach ($cat['items'] as $item) {
-        $category_total_qty += $item['qty'];
-        $category_total_cost += $item['total_cost'];
+        foreach ($cat['items'] as $item) {
+            $category_total_qty += $item['qty'];
+            $category_total_cost += $item['total_cost'];
 
+            $pdf->SetX($offset);
+            $pdf->row([
+                '', '', '',                                 // BR, CC, CEP
+                $item['qty'],
+                $isFirstItem ? $cat['category_name'] : '',
+                $item['item_name'],
+                number_format($item['total_cost'], 2),
+                '', ''
+            ], ['C','C','C','C','L','L','R','L','L']);
+
+            $isFirstItem = false;
+        }
+
+        // Add category total row with total quantity in the Qty column
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(210, 230, 255); // light gray
         $pdf->SetX($offset);
         $pdf->row([
-            '', '', '',                                 // BR, CC, CEP
-            $item['qty'],
-            $isFirstItem ? $cat['category_name'] : '',
-            $item['item_name'],
-            number_format($item['total_cost'], 2),
+            '', '', '',
+            $category_total_qty,
+            $cat['category_name'] . " Total",
+            '',
+            number_format($category_total_cost, 2),
             '', ''
         ], ['C','C','C','C','L','L','R','L','L']);
-
-        $isFirstItem = false;
+        $pdf->SetFont('Arial', '', 8); // Reset font
     }
-
-    // Add category total row with total quantity in the Qty column
-$pdf->SetFont('Arial', 'B', 8);
-$pdf->SetFillColor(210, 230, 255); // light gray
-$pdf->SetX($offset);
-$pdf->row([
-    '', '', '',
-    $category_total_qty,
-    $cat['category_name'] . " Total",
-    '',
-    number_format($category_total_cost, 2),
-    '', ''
-], ['C','C','C','C','L','L','R','L','L']);
-$pdf->SetFont('Arial', '', 8); // Reset font
-
-}
-
 
     // Footer
     $pdf->Ln(4);
