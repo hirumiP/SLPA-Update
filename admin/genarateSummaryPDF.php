@@ -112,7 +112,7 @@ if (isset($_POST['generate_report'])) {
     $pdf->col_w = [20, 20, 20, 15, 80, 0, 40, 45, 25];
     $offset = (297 - array_sum($pdf->col_w)) / 2;
 
-    $headerTitle = "SLPA Budget Management - All Divisions Block Allocation (Requested Items)";
+    $headerTitle = "SLPA Budget Management - All Divisions Block Allocation - Summary Report";
     if ($year1 && $budget1) $headerTitle .= " - Year $year1 (" . ($budget1 == 1 ? "First Round" : "Revised") . ")";
     if ($year2 && $budget2) $headerTitle .= " & Year $year2 (" . ($budget2 == 1 ? "First Round" : "Revised") . ")";
 
@@ -234,7 +234,7 @@ if (isset($_POST['generate_report'])) {
 </head>
 <body>
 <form action="" method="post" autocomplete="off" target="_blank">
-    <h1>All Divisions Block Allocation</h1>
+    <h1>All Divisions Block Allocation - Summary Report</h1>
     
     <label for="year">Select Year 1</label>
     <select name="year" id="year" required>
