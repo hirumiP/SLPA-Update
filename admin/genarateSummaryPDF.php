@@ -9,6 +9,7 @@ if (isset($_POST['generate_report'])) {
     $budget1 = $_POST['budget_id'];
     $year2 = $_POST['year2'] ?? null;
     $budget2 = $_POST['budget_id2'] ?? null;
+    $without_isd = isset($_POST['without_isd']) && $_POST['without_isd'] == '1';
 
     $filters = [];
 
@@ -24,21 +25,24 @@ if (isset($_POST['generate_report'])) {
     }
 
     $where_clause = "WHERE " . implode(" OR ", $filters);
+    $isd_filter = $without_isd ? "AND r.division != 'INFORMATION SYSTEMS'" : "";
 
     $cat_q = "SELECT * FROM categories ORDER BY category_code";
     $cat_rs = mysqli_query($connect, $cat_q) or die("Category query failed: " . mysqli_error($connect));
 
-    $item_q = "
-        SELECT 
-            i.category_code,
-            SUM(r.quantity) AS total_quantity,
-            SUM(r.total_price) AS total_cost
-        FROM item_requests r
-        INNER JOIN items i ON r.item_code = i.item_code
-        $where_clause
-        GROUP BY i.category_code
-        ORDER BY i.category_code
-    ";
+   $item_q = "
+    SELECT 
+        i.category_code,
+        SUM(r.quantity) AS total_quantity,
+        SUM(r.total_price) AS total_cost
+    FROM item_requests r
+    INNER JOIN items i ON r.item_code = i.item_code
+    $where_clause
+    $isd_filter
+    GROUP BY i.category_code
+    ORDER BY i.category_code
+";
+
     $item_rs = mysqli_query($connect, $item_q) or die("Item request query failed: " . mysqli_error($connect));
 
     $categories = [];
@@ -113,6 +117,8 @@ if (isset($_POST['generate_report'])) {
     $offset = (297 - array_sum($pdf->col_w)) / 2;
 
     $headerTitle = "SLPA Budget Management - All Divisions Block Allocation - Summary Report";
+    if ($without_isd) $headerTitle .= " (Without ISD)";
+
     if ($year1 && $budget1) $headerTitle .= " - Year $year1 (" . ($budget1 == 1 ? "First Round" : "Revised") . ")";
     if ($year2 && $budget2) $headerTitle .= " & Year $year2 (" . ($budget2 == 1 ? "First Round" : "Revised") . ")";
 
@@ -271,6 +277,11 @@ if (isset($_POST['generate_report'])) {
         <option value="1">First Round</option>
         <option value="2">Revised</option>
     </select>
+<label>
+    <input type="checkbox" name="without_isd" value="1"> Without ISD (Information Systems Division)
+</label>
+
+
 
     <input type="submit" name="generate_report" value="Generate Summary Report">
 </form>
