@@ -99,7 +99,7 @@ if (isset($_POST['generate_report'])) {
     $pdf->AddPage();
 
     $pdf->SetFont('Arial', 'B', 16);
-    $pdf->Cell(0, 10, 'SLPA Budget Management 2025', 0, 1, 'C');
+    $pdf->Cell(0, 10, 'SLPA Budget Management', 0, 1, 'C');
     $pdf->Ln(3);
     $budget_label = $selected_budget_id == 1 ? "First Round" : ($selected_budget_id == 2 ? "Revised" : "Unknown");
     $pdf->Cell(0, 10, "Division Report: $selected_division for $selected_year ($budget_label)", 0, 1, 'C');
@@ -150,11 +150,7 @@ if (isset($_POST['generate_report'])) {
 
     $pdf->Ln(5);
     $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(0, 8, "Total for $selected_division in $selected_year (Budget ID: $selected_budget_id): LKR " . number_format($total_budget, 2), 0, 1, 'R');
-
-    $pdf->Ln(5);
-    $pdf->SetFont('Arial', 'I', 9);
-    $pdf->Cell(0, 8, 'End of Report', 0, 1, 'C');
+    $pdf->Cell(0, 7, "Total : LKR " . number_format($total_budget, 2), 0, 1, 'R');
 
     $pdf->Output('Division_Report.pdf', 'I');
     exit;
