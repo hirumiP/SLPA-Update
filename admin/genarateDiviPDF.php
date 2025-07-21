@@ -160,8 +160,8 @@ if ($summary_report) {
     // Header row
     $pdf->SetTextColor(0);
     $pdf->Cell(70, 8, 'Category', 1, 0, 'L', true);
-    $pdf->Cell(25, 8, 'New Qty', 1, 0, 'C', true);
-    $pdf->Cell(30, 8, 'Replace Qty', 1, 0, 'C', true);
+    $pdf->Cell(25, 8, 'New ', 1, 0, 'C', true);
+    $pdf->Cell(30, 8, 'Replace ', 1, 0, 'C', true);
     $pdf->Cell(25, 8, 'Total Qty', 1, 0, 'C', true);
     $pdf->Cell(40, 8, 'Total Amount (LKR)', 1, 1, 'R', true);
 
