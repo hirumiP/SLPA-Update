@@ -31,7 +31,7 @@ if (isset($_POST['generate_report'])) {
         LEFT JOIN
             categories c ON i.category_code = c.category_code
         WHERE 
-            ir.year = '$selected_year'
+            ir.year = '$selected_year' AND ir.status = 'Approved'
         ORDER BY 
             i.category_code, i.name, ir.division
     ";
