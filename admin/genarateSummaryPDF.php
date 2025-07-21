@@ -14,11 +14,11 @@ if (isset($_POST['generate_report'])) {
     $filters = [];
 
     if ($year1 && $budget1) {
-        $filters[] = "(r.year = '" . mysqli_real_escape_string($connect, $year1) . "' AND r.budget_id = '" . mysqli_real_escape_string($connect, $budget1) . "')";
-    }
-    if ($year2 && $budget2) {
-        $filters[] = "(r.year = '" . mysqli_real_escape_string($connect, $year2) . "' AND r.budget_id = '" . mysqli_real_escape_string($connect, $budget2) . "')";
-    }
+    $filters[] = "(r.year = '" . mysqli_real_escape_string($connect, $year1) . "' AND r.budget_id = '" . mysqli_real_escape_string($connect, $budget1) . "' AND r.status = 'Approved')";
+}
+if ($year2 && $budget2) {
+    $filters[] = "(r.year = '" . mysqli_real_escape_string($connect, $year2) . "' AND r.budget_id = '" . mysqli_real_escape_string($connect, $budget2) . "' AND r.status = 'Approved')";
+}
 
     if (empty($filters)) {
         die("Please select at least one valid Year + Budget combination.");

@@ -22,7 +22,7 @@ if (isset($_POST['generate_report'])) {
                (ir.quantity * ir.unit_price * 1.10) AS estimated_cost
         FROM item_requests ir
         LEFT JOIN items i ON ir.item_code = i.item_code
-        WHERE ir.year = '$selected_year' AND ir.budget_id = '$selected_budget_id'
+        WHERE ir.year = '$selected_year' AND ir.budget_id = '$selected_budget_id' AND ir.status = 'Approved'
         ORDER BY ir.division, i.name
     ";
     $result1 = mysqli_query($connect, $sql1) or die("Query 1 failed: " . mysqli_error($connect));
