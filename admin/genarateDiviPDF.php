@@ -29,6 +29,7 @@ if (isset($_POST['generate_report'])) {
         ir.division = '$selected_division' 
         AND ir.year = '$selected_year'
         AND ir.budget_id = '$selected_budget_id'
+        AND ir.status = 'Approved' 
     ORDER BY 
         i.category_code, i.name
     ";
