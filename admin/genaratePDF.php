@@ -16,22 +16,23 @@ if (isset($_POST['generate_report'])) {
 
     // SQL query to fetch data for the selected year
     $sql = "
-        SELECT 
-            ir.division, 
-            i.name AS item_name, 
-            ir.unit_price, 
-            ir.quantity, 
-            ir.reason, 
-            (ir.quantity * ir.unit_price) AS total_cost
-        FROM 
-            item_requests ir
-        LEFT JOIN 
-            items i ON ir.item_code = i.item_code
-        WHERE 
-            ir.year = '$selected_year' -- Filter by the selected year
-        ORDER BY 
-            ir.division
-    ";
+    SELECT 
+        ir.division, 
+        i.name AS item_name, 
+        ir.unit_price, 
+        ir.quantity, 
+        ir.reason, 
+        (ir.quantity * ir.unit_price) AS total_cost
+    FROM 
+        item_requests ir
+    LEFT JOIN 
+        items i ON ir.item_code = i.item_code
+    WHERE 
+        ir.year = '$selected_year' AND ir.status = 'Approved'
+    ORDER BY 
+        ir.division
+";
+
     $result = mysqli_query($connect, $sql);
 
     if (!$result) {
