@@ -9,6 +9,19 @@ if (!isset($_SESSION['employee_ID'])) {
 
 include('includes/header.php');
 include('includes/dbc.php');
+
+// Handle filter values
+$selectedYear = isset($_GET['year']) ? $_GET['year'] : '';
+$selectedBudget = isset($_GET['budget']) ? $_GET['budget'] : '';
+
+// Fetch years and budgets for dropdowns
+$yearQuery = "SELECT DISTINCT year FROM item_requests WHERE status = 'Approved' ORDER BY year DESC";
+$yearResult = mysqli_query($connect, $yearQuery);
+
+$budgetQuery = "SELECT DISTINCT b.budget FROM item_requests ir 
+                LEFT JOIN budget b ON ir.budget_id = b.id 
+                WHERE ir.status = 'Approved'";
+$budgetResult = mysqli_query($connect, $budgetQuery);
 ?>
 
 <div class="container-fluid px-4">
@@ -31,12 +44,53 @@ include('includes/dbc.php');
                     display: none !important;
                 }
             }
+
+            table, th, td {
+                border: 1px solid black !important;
+            }
+
+            table {
+                border-collapse: collapse;
+            }
         </style>
     </head>
     <body>
         <?php include('includes/filter.php'); ?>
-        
-        <br>
+
+        <!-- ✅ Centered, wider dropdowns -->
+<div class="d-flex justify-content-center mb-4 no-print">
+    <form method="GET" class="d-flex flex-wrap align-items-end gap-3">
+        <div>
+            <label for="year" class="form-label">Year</label>
+            <select name="year" id="year" class="form-select" style="min-width: 200px;">
+                <option value="">All Years</option>
+                <?php while ($row = mysqli_fetch_assoc($yearResult)): ?>
+                    <option value="<?= $row['year'] ?>" <?= ($selectedYear == $row['year']) ? 'selected' : '' ?>>
+                        <?= $row['year'] ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+
+        <div>
+            <label for="budget" class="form-label">Budget Type</label>
+            <select name="budget" id="budget" class="form-select" style="min-width: 200px;">
+                <option value="">All Budgets</option>
+                <?php while ($row = mysqli_fetch_assoc($budgetResult)): ?>
+                    <option value="<?= $row['budget'] ?>" <?= ($selectedBudget == $row['budget']) ? 'selected' : '' ?>>
+                        <?= $row['budget'] ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+
+        <div>
+            <button type="submit" class="btn btn-primary mt-4">Filter</button>
+        </div>
+    </form>
+</div>
+
+
         <div class="table-container">
             <table class="table table-bordered text-center">
                 <thead style="background-color: #003366; color: #ffffff;">
@@ -54,7 +108,7 @@ include('includes/dbc.php');
                 </thead>
                 <tbody>
                     <?php
-                    // Updated SQL query to show only approved item requests
+                    // Base query
                     $sql = "SELECT 
                                 ir.division, 
                                 i.name AS item_name, 
@@ -73,6 +127,15 @@ include('includes/dbc.php');
                                 budget b ON ir.budget_id = b.id
                             WHERE 
                                 ir.status = 'Approved'";
+
+                    // Add filters
+                    if (!empty($selectedYear)) {
+                        $sql .= " AND ir.year = '" . mysqli_real_escape_string($connect, $selectedYear) . "'";
+                    }
+
+                    if (!empty($selectedBudget)) {
+                        $sql .= " AND b.budget = '" . mysqli_real_escape_string($connect, $selectedBudget) . "'";
+                    }
 
                     $result = mysqli_query($connect, $sql);
 
