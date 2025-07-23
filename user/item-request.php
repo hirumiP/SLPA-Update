@@ -9,43 +9,46 @@ if (!isset($_SESSION['employee_ID'])) {
 include('includes/header.php');
 include(__DIR__ . '/../user/includes/dbc.php');
 
-$items = [];
 $division = $_SESSION['division'];
+$quantityError = "";
 
-$quantityError = ""; // ✨ Error message variable
-
-// Fetch items
-$item_query = "SELECT item_code, name FROM items";
-$item_result = $connect->query($item_query);
-if ($item_result->num_rows > 0) {
-    while ($row = $item_result->fetch_assoc()) {
-        $items[] = $row;
+// Fetch categories
+$categories = [];
+$category_query = "SELECT category_code, description FROM categories";
+$category_result = $connect->query($category_query);
+if ($category_result->num_rows > 0) {
+    while ($row = $category_result->fetch_assoc()) {
+        $categories[] = $row;
     }
 }
 
+// Fetch budgets
+$budgets = [];
+$budget_query = "SELECT * FROM budget";
+$budget_result = $connect->query($budget_query);
+if ($budget_result->num_rows > 0) {
+    while ($row = $budget_result->fetch_assoc()) {
+        $budgets[] = $row;
+    }
+}
+
+// Process form
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $division = $_POST['division'];
     $item_code = $_POST['item'];
     $year = !empty($_POST['year']) ? $_POST['year'] : null;
-    if (empty(trim($_POST['justification']))) {
-        echo "<div class='alert alert-danger text-center'>Justification is required.</div>";
-        exit();
-    }
     $justification = trim($_POST['justification']);
     $reason = $_POST['reason'];
-    $unit_price = !empty($_POST['unit_price']) ? $_POST['unit_price'] : null;
-    $budget_id = !empty($_POST['budget']) ? $_POST['budget'] : null;
-    $remark = !empty($_POST['remark']) ? $_POST['remark'] : null;
+    $unit_price = $_POST['unit_price'];
+    $quantity = $_POST['quantity'];
+    $budget_id = $_POST['budget'];
+    $remark = $_POST['remark'];
 
-    // ✨ Quantity validation
-    if (!isset($_POST['quantity']) || !is_numeric($_POST['quantity']) || intval($_POST['quantity']) <= 0) {
-        $quantityError = "Please enter a valid quantity (greater than 0).";
+    if (empty($justification)) {
+        echo "<div class='alert alert-danger text-center'>Justification is required.</div>";
+    } elseif (!is_numeric($quantity) || intval($quantity) <= 0) {
+        $quantityError = "Please enter a valid quantity.";
     } else {
-        $quantity = intval($_POST['quantity']);
-    }
-
-    // ✨ If no quantity error, proceed with DB insert
-    if (empty($quantityError)) {
         $stmt = $connect->prepare("INSERT INTO item_requests 
             (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -76,151 +79,158 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="container-fluid px-4">
     <h2 class="text-center mb-4">Item Request For Budget 2025</h2>
-    <form method="POST" action="" class="row g-3 shadow-lg p-5 border border-2 border-primary rounded-3 bg-light">
+    <form method="POST" class="row g-3 shadow-lg p-5 border border-2 border-primary rounded-3 bg-light">
 
+        <!-- Division -->
         <div class="col-md-4">
             <label for="division" class="form-label">Division</label>
             <input type="text" class="form-control" value="<?= htmlspecialchars($division); ?>" readonly>
             <input type="hidden" name="division" value="<?= htmlspecialchars($division); ?>">
         </div>
 
+        <!-- Category -->
         <div class="col-md-4">
-            <label for="item" class="form-label">Item</label>
-            <select id="item" name="item" class="form-select" required>
-                <option disabled <?= !isset($_POST['item']) ? 'selected' : ''; ?>>Select Item</option>
-                <?php foreach ($items as $item): ?>
-                    <option value="<?= $item['item_code']; ?>" <?= (isset($_POST['item']) && $_POST['item'] === $item['item_code']) ? 'selected' : ''; ?>>
-                        <?= $item['item_code']; ?> - <?= $item['name']; ?>
+            <label for="category" class="form-label">Category</label>
+            <select id="category" name="category" class="form-select">
+                <option value="">Select Category</option>
+                <?php foreach ($categories as $cat): ?>
+                    <option value="<?= $cat['category_code']; ?>">
+                        <?= htmlspecialchars($cat['category_code'] . ' - ' . $cat['description']); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
         </div>
 
+        <!-- Item -->
         <div class="col-md-4">
-            <label for="year" class="form-label">Year</label>
-            <input type="number" class="form-control" id="year" name="year" placeholder="Enter year"
-                   value="<?= isset($_POST['year']) ? htmlspecialchars($_POST['year']) : date('Y'); ?>" min="2020" max="2100" required>
-        </div>
-
-        <div class="col-md-4">
-            <label for="budget" class="form-label">Budget</label>
-            <select id="budget" name="budget" class="form-select">
-                <option disabled <?= !isset($_POST['budget']) ? 'selected' : ''; ?>>Choose Budget</option>
-                <?php
-                $sql = "SELECT * FROM budget";
-                $result = $connect->query($sql);
-                while ($row = $result->fetch_assoc()) {
-                    $selected = (isset($_POST['budget']) && $_POST['budget'] == $row['id']) ? 'selected' : '';
-                    echo "<option value='" . $row['id'] . "' data-name='" . strtolower($row['budget']) . "' $selected>" . $row['budget'] . "</option>";
-                }
-                ?>
+            <label for="item" class="form-label">Item</label>
+            <select id="item" name="item" class="form-select" required>
+                <option value="">Select Item</option>
             </select>
         </div>
 
+        <!-- Year -->
+        <div class="col-md-4">
+            <label for="year" class="form-label">Year</label>
+            <input type="number" class="form-control" id="year" name="year"
+                   value="<?= date('Y'); ?>" min="2020" max="2100" required>
+        </div>
+
+        <!-- Budget -->
+        <div class="col-md-4">
+            <label for="budget" class="form-label">Budget</label>
+            <select id="budget" name="budget" class="form-select" required>
+                <option value="">Choose Budget</option>
+                <?php foreach ($budgets as $b): ?>
+                    <option value="<?= $b['id']; ?>" data-name="<?= strtolower($b['budget']); ?>">
+                        <?= htmlspecialchars($b['budget']); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <!-- Unit Price -->
         <div class="col-md-4">
             <label for="unit_price" class="form-label">Unit Price (Rs)</label>
             <input type="number" class="form-control" id="unit_price" name="unit_price"
-                   placeholder="Enter unit price" step="0.01" min="0"
-                   value="<?= isset($_POST['unit_price']) ? htmlspecialchars($_POST['unit_price']) : ''; ?>">
+                   placeholder="Enter unit price" step="0.01" min="0">
         </div>
 
+        <!-- Quantity -->
         <div class="col-md-4">
             <label for="quantity" class="form-label">Quantity</label>
             <?php if (!empty($quantityError)): ?>
-                <div class="text-danger mb-2"><?= $quantityError; ?></div>
+                <div class="text-danger mb-1"><?= $quantityError; ?></div>
             <?php endif; ?>
-            <input
-                type="number"
-                class="form-control <?= !empty($quantityError) ? 'is-invalid' : ''; ?>"
-                id="quantity"
-                name="quantity"
-                placeholder="Enter quantity"
-                min="1"
-                required
-                value="<?= isset($_POST['quantity']) ? htmlspecialchars($_POST['quantity']) : ''; ?>"
-            >
+            <input type="number" class="form-control <?= !empty($quantityError) ? 'is-invalid' : ''; ?>"
+                   name="quantity" min="1" required>
         </div>
 
-        <div class="col-md-12">
+        <!-- Reason -->
+        <div class="col-md-4">
             <label for="reason" class="form-label">Reason</label>
-            <select id="reason" name="reason" class="form-select">
-                <option value="New" <?= (isset($_POST['reason']) && $_POST['reason'] === 'New') ? 'selected' : ''; ?>>New</option>
-                <option value="Replace" <?= (isset($_POST['reason']) && $_POST['reason'] === 'Replace') ? 'selected' : ''; ?>>Replace</option>
+            <select name="reason" id="reason" class="form-select">
+                <option value="New">New</option>
+                <option value="Replace">Replace</option>
             </select>
         </div>
 
+        <!-- Justification -->
         <div class="col-md-12">
             <label for="justification" class="form-label">Justification</label>
-            <input 
-                type="text" 
-                class="form-control" 
-                id="justification" 
-                name="justification" 
-                placeholder="Enter justification" 
-                required
-            >
+            <input type="text" class="form-control" name="justification" required>
         </div>
 
+        <!-- Remark -->
         <div class="col-md-12">
             <label for="remark" class="form-label">Remark</label>
-            <input type="text" class="form-control" id="remark" name="remark"
-                   placeholder="Enter remark (optional)"
-                   value="<?= isset($_POST['remark']) ? htmlspecialchars($_POST['remark']) : ''; ?>">
+            <input type="text" class="form-control" name="remark">
         </div>
 
+        <!-- Submit -->
         <div class="col-12 text-center">
-            <button type="submit" class="btn btn-primary px-5 py-2">ADD</button>
+            <button type="submit" class="btn btn-primary px-5">ADD</button>
         </div>
     </form>
 </div>
 
 <?php include('includes/scripts.php'); ?>
 
-<!-- ✅ Auto-fill unit price -->
+<!-- JavaScript for dynamic functionality -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    const categorySelect = document.getElementById("category");
     const itemSelect = document.getElementById("item");
     const unitPriceInput = document.getElementById("unit_price");
+    const budgetSelect = document.getElementById("budget");
+    const yearInput = document.getElementById("year");
 
-    itemSelect.addEventListener("change", function () {
-        const selectedItem = itemSelect.value;
+    // Load items based on category
+    categorySelect.addEventListener("change", function () {
+        const categoryCode = this.value;
 
-        if (selectedItem) {
-            fetch(`get_item_price.php?item_code=${selectedItem}`)
+        itemSelect.innerHTML = '<option disabled selected>Select Item</option>';
+
+        if (categoryCode) {
+            fetch(`get_items_by_category.php?category_code=${encodeURIComponent(categoryCode)}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.price !== undefined && data.price !== null) {
-                        unitPriceInput.value = data.price;
-                    } else {
-                        unitPriceInput.value = '';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching unit price:', error);
-                    unitPriceInput.value = '';
+                    data.forEach(item => {
+                        const option = document.createElement("option");
+                        option.value = item.item_code;
+                        option.textContent = `${item.item_code} - ${item.name}`;
+                        itemSelect.appendChild(option);
+                    });
                 });
         }
     });
 
-    // ✅ Auto-update year based on budget selection
-    const budgetSelect = document.getElementById("budget");
-    const yearInput = document.getElementById("year");
-    const currentYear = new Date().getFullYear();
+    // Load unit price on item selection
+    itemSelect.addEventListener("change", function () {
+        const itemCode = this.value;
+        if (itemCode) {
+            fetch(`get_item_price.php?item_code=${itemCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    unitPriceInput.value = data.price || '';
+                });
+        }
+    });
 
+    // Auto-fill year based on budget name
     function updateYearFromBudget() {
-        const selectedOption = budgetSelect.options[budgetSelect.selectedIndex];
-        const budgetName = selectedOption.getAttribute('data-name');
+        const selected = budgetSelect.options[budgetSelect.selectedIndex];
+        const name = selected?.dataset?.name || '';
+        const currentYear = new Date().getFullYear();
 
-        if (budgetName && budgetName.includes("next year")) {
+        if (name.includes("next year")) {
             yearInput.value = currentYear + 1;
-        } else if (budgetName && budgetName.includes("revised")) {
+        } else if (name.includes("revised")) {
             yearInput.value = currentYear;
         }
     }
 
     budgetSelect.addEventListener("change", updateYearFromBudget);
-
-    // Trigger on load if already selected
-    updateYearFromBudget();
+    updateYearFromBudget(); // Initial call
 });
 </script>
