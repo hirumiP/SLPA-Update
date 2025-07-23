@@ -48,31 +48,90 @@ $result = mysqli_query($connect, $sql);
 .bg-light-green {
     background-color: #d4edda !important;
 }
-table, th, td {
-    border: 1px solid gray !important;
+.table th, .table td {
+    border: 1px solid #dee2e6 !important;
+    vertical-align: middle !important;
+    font-size: 1rem;
 }
-table {
+.table th {
+    background-color: #0d2957;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.table {
     border-collapse: collapse;
+    background: #fff;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(13,41,87,0.07);
+}
+.badge.bg-success, .badge.bg-warning {
+    font-size: 1em;
+    padding: 0.5em 1em;
+    border-radius: 0.5em;
+}
+.btn-primary.btn-sm {
+    background: #0d6efd;
+    border: none;
+    font-weight: 500;
+}
+.btn-primary.btn-sm:hover {
+    background: #0b5ed7;
+}
+.btn-success, .btn-danger {
+    min-width: 140px;
+    font-weight: 500;
+}
+.modal-content {
+    border-radius: 0.75rem;
+}
+.modal-header {
+    background: #0d2957;
+    color: #fff;
+    border-bottom: 1px solid #dee2e6;
+}
+.modal-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.form-label {
+    font-weight: 500;
+}
+.alert {
+    font-size: 1rem;
+}
+.table-container {
+    margin-top: 2rem;
+}
+@media (max-width: 768px) {
+    .table th, .table td {
+        font-size: 0.95rem;
+    }
+    .btn-success, .btn-danger {
+        min-width: 100px;
+        font-size: 0.95rem;
+    }
 }
 </style>
 
 <div class="container-fluid px-4">
-    <h2 class="text-center mb-4">Item Requests - Division: <?php echo $loggedDivision; ?></h2>
+    <h2 class="text-center mb-4 fw-bold text-primary">Item Requests - Division: <?php echo htmlspecialchars($loggedDivision); ?></h2>
 
     <?php if (isset($_GET['msg']) && $_GET['msg'] == 'approved'): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            ✅ Item request approved successfully.
+            <i class="bi bi-check-circle-fill"></i> Item request approved successfully.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php elseif (isset($_GET['msg']) && $_GET['msg'] == 'deleted'): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            ❌ Item request deleted successfully.
+            <i class="bi bi-x-circle-fill"></i> Item request deleted successfully.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
 
     <div class="table-container">
-        <table class="table table-bordered">
+        <table class="table table-bordered table-hover align-middle text-center shadow-sm">
             <thead>
                 <tr>
                     <th>Item Name</th>
@@ -104,9 +163,9 @@ table {
                             <td><?= htmlspecialchars($row['remark']); ?></td>
                             <td>
                                 <?php if ($row['status'] == 'Approved'): ?>
-                                    <span class="badge bg-success">Approved</span>
+                                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Approved</span>
                                 <?php else: ?>
-                                    <span class="badge bg-warning text-dark">Pending</span>
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Pending</span>
                                 <?php endif; ?>
                             </td>
                             <td class="no-print">
@@ -117,7 +176,7 @@ table {
                                         data-bs-target="#approveModal"
                                         onclick="fillForm('<?= $row['request_id']; ?>', '<?= $row['unit_price']; ?>', '<?= $row['quantity']; ?>')"
                                     >
-                                        Approve
+                                        <i class="bi bi-check2-square"></i> Approve
                                     </button>
                                 <?php else: ?>
                                     <span class="text-muted">—</span>
@@ -141,7 +200,7 @@ table {
     <div class="modal-content">
       <form action="process_item_request.php" method="POST">
           <div class="modal-header">
-              <h5 class="modal-title" id="approveModalLabel">Approve Item Request</h5>
+              <h5 class="modal-title" id="approveModalLabel"><i class="bi bi-check2-square"></i> Approve Item Request</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -156,8 +215,12 @@ table {
               </div>
           </div>
           <div class="modal-footer">
-              <button type="submit" name="approve" class="btn btn-success">Approve Item Request</button>
-              <button type="submit" name="delete" class="btn btn-danger">Delete Item Request</button>
+              <button type="submit" name="approve" class="btn btn-success">
+                  <i class="bi bi-check-circle"></i> Approve Item Request
+              </button>
+              <button type="submit" name="delete" class="btn btn-danger">
+                  <i class="bi bi-trash"></i> Delete Item Request
+              </button>
           </div>
       </form>
     </div>
@@ -172,4 +235,5 @@ function fillForm(id, unit_price, quantity) {
 }
 </script>
 
-<?php include('includes/scripts.php'); ?>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<?php include('includes/scripts.php');

@@ -81,20 +81,24 @@ if ($result && mysqli_num_rows($result) > 0) {
     body {
         margin: 0 !important;
         padding: 0 !important;
-        font-size: 13px;
+        font-size: 16px !important; /* Match screen font size */
+    }
+    table.table th,
+    table.table td {
+        font-size: 14px !important; /* Match screen font size */
     }
 }
 
 
 body {
     margin: 10px;
-    font-size: 13px;
+    font-size: 16px; /* Increased from 13px */
 }
 
 table.table th,
 table.table td {
-    font-size: 11px;
-    padding: 4px 5px;
+    font-size: 14px; /* Increased from 11px */
+    padding: 6px 8px;
     border: 1px solid #ccc;
     word-wrap: break-word;
     white-space: normal;
