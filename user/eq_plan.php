@@ -55,20 +55,50 @@ $result = mysqli_stmt_get_result($stmt);
         display: none !important;
     }
 }
+.table th, .table td {
+    vertical-align: middle !important;
+    font-size: 1rem;
+}
+.table th {
+    background-color: #0d2957;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.table {
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(13,41,87,0.07);
+}
+.badge.bg-success, .badge.bg-warning {
+    font-size: 1em;
+    padding: 0.5em 1em;
+    border-radius: 0.5em;
+}
+.table-container {
+    margin-top: 2rem;
+}
 .justify-left {
     text-align: left;
 }
-
+@media (max-width: 768px) {
+    .table th, .table td {
+        font-size: 0.95rem;
+    }
+}
 </style>
 
 <div class="container-fluid px-4">
-    <h2 class="text-center mb-4">Item Requests - Division: <?php echo htmlspecialchars($user_division); ?></h2>
-    
+    <h2 class="text-center mb-4 fw-bold text-primary" style="letter-spacing: 1px;">
+        Item Requests - Division: <?php echo htmlspecialchars($user_division); ?>
+    </h2>
+
     <div class="table-container">
-        <table class="table table-bordered table-left">
+        <table class="table table-bordered table-hover align-middle text-center shadow-sm">
             <thead>
                 <tr>
-                    
                     <th scope="col">Item Name</th>
                     <th scope="col">Budget Name</th>
                     <th scope="col">Year</th>
@@ -85,7 +115,6 @@ $result = mysqli_stmt_get_result($stmt);
                 if ($result && mysqli_num_rows($result) > 0) {
                     while ($row = mysqli_fetch_assoc($result)) {
                         echo "<tr>
-                            
                             <td>" . htmlspecialchars($row['item_name']) . "</td>
                             <td>" . htmlspecialchars($row['budget_name']) . "</td>
                             <td>" . htmlspecialchars($row['year']) . "</td>
@@ -95,28 +124,30 @@ $result = mysqli_stmt_get_result($stmt);
                             <td class='justify-left'>" . htmlspecialchars($row['justification']) . "</td>
                             <td>" . htmlspecialchars($row['remark']) . "</td>
                             <td>";
-
                         if ($row['status'] === 'Approved') {
-                            echo "<span class='badge bg-success'>Approved</span>";
+                            echo "<span class='badge bg-success'><i class='bi bi-check-circle'></i> Approved</span>";
                         } else {
-                            echo "<span class='badge bg-warning text-dark'>Pending</span>";
+                            echo "<span class='badge bg-warning text-dark'><i class='bi bi-hourglass-split'></i> Pending</span>";
                         }
-
                         echo "</td></tr>";
                     }
                 } else {
-                    echo "<tr><td colspan='10'>No data found</td></tr>";
+                    echo "<tr><td colspan='9'>No data found</td></tr>";
                 }
                 ?>
             </tbody>
         </table>
     </div>
+
+    <!-- Print Button -->
+    <!-- <div class="text-end mb-3 no-print">
+        <button class="btn btn-primary px-4 fw-semibold" onclick="printPage()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+    </div> -->
 </div>
 
-<!-- ✅ Print Button -->
-<div class="text-end mb-3 no-print">
-    <button class="btn btn-primary" onclick="printPage()">Print</button>
-</div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <script>
 function printPage() {

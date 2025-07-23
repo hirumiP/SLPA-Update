@@ -38,27 +38,63 @@ $pendingCount = mysqli_num_rows($result);
 ?>
 
 <div class="container-fluid px-4">
-    <h2 class="text-center mb-4">Item Request Plans (Division: <?php echo $loggedDivision; ?>)</h2>
-
-    <?php if ($pendingCount > 0): ?>
-        <!-- Alert for Pending Requests -->
-        <a href="item_req.php" style="text-decoration: none;">
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-        <strong>Attention!</strong> You have <?php echo $pendingCount; ?> item request(s) pending approval.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-</a>
-
-    <?php else: ?>
-        <!-- Alert for No Pending Requests -->
-         <a href="item_req.php" style="text-decoration: none;">
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <strong>Good News!</strong> There are no pending item requests for approval.
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mt-5">
+                <div class="card-header bg-primary text-white fw-semibold text-center" style="font-size: 1.3rem;">
+                    <i class="bi bi-clipboard-data"></i> Item Requests -
+                    <span class="fw-normal" style="font-size: 1.3rem;">Division: <?php echo htmlspecialchars($loggedDivision); ?></span>
+                </div>
+                <div class="card-body">
+                    <?php if ($pendingCount > 0): ?>
+                        <a href="item_req.php" style="text-decoration: none;">
+                            <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>
+                                    <strong>Attention!</strong> You have <?php echo $pendingCount; ?> item request(s) pending approval.
+                                </div>
+                                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        </a>
+                    <?php else: ?>
+                        <a href="item_req.php" style="text-decoration: none;">
+                            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                <div>
+                                    <strong>Good News!</strong> There are no pending item requests for approval.
+                                </div>
+                                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        </a>
+                    <?php endif; ?>
+                    <div class="text-center mt-4">
+                        <a href="item_req.php" class="btn btn-outline-primary btn-lg px-4">
+                            <i class="bi bi-list-task"></i> View All Item Requests
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        </a>
-    <?php endif; ?>
-
+    </div>
 </div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+    .card {
+        border-radius: 0.75rem;
+    }
+    .card-header {
+        letter-spacing: 0.5px;
+    }
+    .alert {
+        font-size: 1.1rem;
+        border-radius: 0.5rem;
+    }
+    .btn-outline-primary {
+        border-radius: 0.5rem;
+        font-weight: 500;
+        font-size: 1.1rem;
+    }
+</style>
 
 <?php include('includes/scripts.php'); ?>

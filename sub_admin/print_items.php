@@ -57,12 +57,10 @@ if ($result && mysqli_num_rows($result) > 0) {
 ?>
 
 <style>
-/* ... your existing styles ... */
-
 @media print {
     @page {
         margin: 0;
-        size: A4 portrait;
+        size: A4 landscape;
     }
 
     .no-print,
@@ -81,63 +79,64 @@ if ($result && mysqli_num_rows($result) > 0) {
     body {
         margin: 0 !important;
         padding: 0 !important;
-        font-size: 16px !important; /* Match screen font size */
+        font-size: 16px !important;
+        background: #fff !important;
+        color: #000 !important;
     }
     table.table th,
     table.table td {
-        font-size: 14px !important; /* Match screen font size */
+        font-size: 14px !important;
+        color: #000 !important;
     }
 }
 
-
 body {
     margin: 10px;
-    font-size: 16px; /* Increased from 13px */
+    font-size: 16px;
+    background: #f8f9fa;
 }
 
-table.table th,
-table.table td {
-    font-size: 14px; /* Increased from 11px */
+.table {
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(13,41,87,0.07);
+}
+
+.table th, .table td {
+    font-size: 14px;
     padding: 6px 8px;
     border: 1px solid #ccc;
     word-wrap: break-word;
     white-space: normal;
+    vertical-align: middle !important;
 }
 
-/* Apply specific minimum widths to reduce space */
-table.table th:nth-child(1),
-table.table td:nth-child(1) { width: 50px; }
-
-table.table th:nth-child(2),
-table.table td:nth-child(2) { width: 50px; }
-
-table.table th:nth-child(3),
-table.table td:nth-child(3) { width: 50px; }
-
-table.table th:nth-child(4),
-table.table td:nth-child(4) { width: 40px; }
-
-table.table th:nth-child(5),
-table.table td:nth-child(5) { width: 150px; }
-
-table.table th:nth-child(6),
-table.table td:nth-child(6) { width: 80px; }
-
-table.table th:nth-child(7),
-table.table td:nth-child(7) { width: 60px; }
-
-table.table th:nth-child(8),
-table.table td:nth-child(8) { width: 220px; }
-
-table.table th:nth-child(9),
-table.table td:nth-child(9) { width: 100px; }
-
-
-table.table {
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
+.table th {
+    background-color: #0d2957;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }
+
+.table thead tr:nth-child(2) th {
+    background: #e9ecef;
+    color: #0d2957;
+    font-weight: 500;
+}
+
+.print-only {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .table th, .table td {
+        font-size: 12px;
+        padding: 4px 4px;
+    }
+}
+
 </style>
 
 <div class="container-fluid px-4 mt-4">
@@ -163,7 +162,9 @@ table.table {
 
     <!-- ✅ Print Button -->
     <div class="text-end mb-3 no-print">
-        <button class="btn btn-primary" onclick="window.print()">Print</button>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
     </div>
 
     <?php if (!empty($item_list)): ?>

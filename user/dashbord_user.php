@@ -72,21 +72,21 @@ if ($loggedDivision && $selectedYear && $selectedBudget) {
 ?>
 
 <div class="container-fluid px-4">
-    <h1 class="mt-4">
+    <h1 class="mt-4 fw-bold text-primary" style="letter-spacing: 1px;">
         SLPA Budget Management System
         <?php if ($loggedDivision): ?>
-            <small style="font-size: 35px; color: #555;"> - <?= htmlspecialchars($loggedDivision) ?></small>
+            <small class="text-secondary" style="font-size: 1.6rem;"> - <?= htmlspecialchars($loggedDivision) ?></small>
         <?php endif; ?>
     </h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item active">Dashboard</li>
+    <ol class="breadcrumb mb-4 bg-white shadow-sm rounded py-2 px-3">
+        <li class="breadcrumb-item active fs-5">Dashboard</li>
     </ol>
 
     <!-- Filter Section -->
-    <form method="GET" class="row mb-4">
+    <form method="GET" class="row mb-4 g-3 align-items-end justify-content-center">
         <div class="col-md-3">
-            <label>Year</label>
-            <select name="year" class="form-control" required>
+            <label class="form-label fw-semibold">Year</label>
+            <select name="year" class="form-select" required>
                 <option value="">Select Year</option>
                 <?php foreach ($years as $year): ?>
                     <option value="<?= $year ?>" <?= ($selectedYear == $year) ? 'selected' : '' ?>>
@@ -96,46 +96,50 @@ if ($loggedDivision && $selectedYear && $selectedBudget) {
             </select>
         </div>
         <div class="col-md-3">
-            <label>Budget Round</label>
-            <select name="budget" class="form-control" required>
+            <label class="form-label fw-semibold">Budget Round</label>
+            <select name="budget" class="form-select" required>
                 <option value="">Select Budget</option>
                 <?php foreach ($budgets as $budget): ?>
                     <option value="<?= $budget ?>" <?= ($selectedBudget == $budget) ? 'selected' : '' ?>>
-    <?= ($budget == 1) ? 'First Round' : (($budget == 2) ? 'Revised' : 'Unknown') ?>
-</option>
-
+                        <?= ($budget == 1) ? 'First Round' : (($budget == 2) ? 'Revised' : 'Unknown') ?>
+                    </option>
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary">Filter</button>
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary fw-semibold">
+                <i class="bi bi-funnel-fill"></i> Filter
+            </button>
         </div>
     </form>
 
     <!-- Summary Section -->
     <?php if ($selectedYear && $selectedBudget): ?>
-        <div class="row">
-            <div class="col-md-3">
-                <div class="card text-white mb-4" style="background-color: #003366;">
-                    <div class="card-body">
-                        <h5>Total Requests</h5>
-                        <h3><?= $total_requests ?></h3>
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card text-white shadow-sm h-100" style="background: linear-gradient(135deg, #003366 70%, #00509e 100%);">
+                    <div class="card-body text-center">
+                        <div class="mb-2"><i class="bi bi-clipboard-data" style="font-size: 2rem;"></i></div>
+                        <h5 class="card-title">Total Requests</h5>
+                        <h2 class="fw-bold"><?= $total_requests ?></h2>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-white mb-4" style="background-color: #003366;">
-                    <div class="card-body">
-                        <h5>Total Items Requested</h5>
-                        <h3><?= $total_items ?></h3>
+            <div class="col-md-4">
+                <div class="card text-white shadow-sm h-100" style="background: linear-gradient(135deg, #00509e 70%, #0074d9 100%);">
+                    <div class="card-body text-center">
+                        <div class="mb-2"><i class="bi bi-box-seam" style="font-size: 2rem;"></i></div>
+                        <h5 class="card-title">Total Items Requested</h5>
+                        <h2 class="fw-bold"><?= $total_items ?></h2>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-white mb-4" style="background-color: #003366;">
-                    <div class="card-body">
-                        <h5>Total Budget (LKR)</h5>
-                        <h3><?= number_format($total_budget, 2) ?></h3>
+            <div class="col-md-4">
+                <div class="card text-white shadow-sm h-100" style="background: linear-gradient(135deg, #0074d9 70%, #00b8d9 100%);">
+                    <div class="card-body text-center">
+                        <div class="mb-2"><i class="bi bi-cash-coin" style="font-size: 2rem;"></i></div>
+                        <h5 class="card-title">Total Budget (LKR)</h5>
+                        <h2 class="fw-bold"><?= number_format($total_budget, 2) ?></h2>
                     </div>
                 </div>
             </div>
@@ -143,18 +147,42 @@ if ($loggedDivision && $selectedYear && $selectedBudget) {
     <?php endif; ?>
 
     <!-- Pie Chart Section -->
-    <!-- <?php if (!empty($itemsChartLabels)): ?>
-        <div class="card mb-4" style="border: 2px solid #003366;">
-            <div class="card-header" style="background-color: #003366; color: white;">
-                <i class="fas fa-chart-pie me-1"></i>
+    <?php /* Chart removed as requested
+    <?php if (!empty($itemsChartLabels)): ?>
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header bg-primary text-white fw-semibold">
+                <i class="bi bi-pie-chart-fill me-2"></i>
                 Item Requests by Total Cost (LKR)
             </div>
             <div class="card-body">
                 <canvas id="itemRequestsChart" height="100"></canvas>
             </div>
         </div>
-    <?php endif; ?> -->
+    <?php endif; ?>
+    */ ?>
 </div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+    .card {
+        border-radius: 0.75rem;
+    }
+    .card-header {
+        font-size: 1.1rem;
+        letter-spacing: 0.5px;
+    }
+    .form-label {
+        font-size: 1rem;
+    }
+    .breadcrumb {
+        font-size: 1.1rem;
+    }
+    @media (max-width: 768px) {
+        .card-title { font-size: 1rem; }
+        .card-body h2 { font-size: 1.3rem; }
+        .form-label { font-size: 0.95rem; }
+    }
+</style>
 
 <?php include('includes/footer.php'); ?>
 <?php include('includes/scripts.php'); ?>

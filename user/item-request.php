@@ -13,10 +13,6 @@ $items = [];
 $categories = [];
 $division = $_SESSION['division'];
 
-$quantityError = "";
-$categoryError = "";
-$budgetError = "";
-
 // Fetch categories
 $category_query = "SELECT category_code, description FROM categories";
 $category_result = $connect->query($category_query);
@@ -32,6 +28,7 @@ while ($row = $item_result->fetch_assoc()) {
 }
 
 // Handle form submission
+$successMsg = $errorMsg = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $division = $_POST['division'];
     $category_code = $_POST['category'] ?? '';
@@ -42,26 +39,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $unit_price = $_POST['unit_price'];
     $budget_id = $_POST['budget'] ?? null;
     $remark = $_POST['remark'] ?? null;
+    $quantity = intval($_POST['quantity']);
 
-    // Validate category
-    if (empty($category_code)) {
-        $categoryError = "Please select a category.";
-    }
-
-    // Validate budget
-    if (empty($budget_id) || !is_numeric($budget_id)) {
-        $budgetError = "Please select a valid budget.";
-    }
-
-    // Validate quantity
-    if (!isset($_POST['quantity']) || !is_numeric($_POST['quantity']) || intval($_POST['quantity']) <= 0) {
-        $quantityError = "Please enter a valid quantity (greater than 0).";
+    // Basic validation
+    if (!$category_code || !$budget_id || !$item_code || !$unit_price || !$quantity || !$year || !$justification) {
+        $errorMsg = "Please fill in all required fields.";
     } else {
-        $quantity = intval($_POST['quantity']);
-    }
-
-    // Proceed if no errors
-    if (empty($quantityError) && empty($categoryError) && empty($budgetError)) {
         $stmt = $connect->prepare("INSERT INTO item_requests 
             (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -80,9 +63,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         );
 
         if ($stmt->execute()) {
-            echo "<div class='alert alert-success text-center'>Item request successfully added!</div>";
+            $successMsg = "Item request successfully added!";
         } else {
-            echo "<div class='alert alert-danger text-center'>Error: " . $stmt->error . "</div>";
+            $errorMsg = "Error: " . $stmt->error;
         }
 
         $stmt->close();
@@ -91,27 +74,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 ?>
 
 <div class="container-fluid px-4">
-    <h2 class="text-center mb-4">Item Request For Budget 2025</h2>
-    <form method="POST" action="" class="row g-3 shadow-lg p-5 border border-2 border-primary rounded-3 bg-light">
+    <h2 class="text-center mb-4 fw-bold text-primary" style="letter-spacing: 1px;">Item Request For Budget 2025</h2>
+    <?php if ($successMsg): ?>
+        <div class="alert alert-success text-center"><?= $successMsg; ?></div>
+    <?php elseif ($errorMsg): ?>
+        <div class="alert alert-danger text-center"><?= $errorMsg; ?></div>
+    <?php endif; ?>
+    <form method="POST" action="" class="row g-4 shadow-lg p-5 border border-2 border-primary rounded-4 bg-light">
 
         <!-- Division -->
         <div class="col-md-4">
-            <label for="division" class="form-label">Division</label>
+            <label for="division" class="form-label fw-semibold">Division</label>
             <input type="text" class="form-control" value="<?= htmlspecialchars($division); ?>" readonly>
             <input type="hidden" name="division" value="<?= htmlspecialchars($division); ?>">
         </div>
 
         <!-- Category -->
         <div class="col-md-4">
-            <label for="category" class="form-label">Category</label>
-            <?php if (!empty($categoryError)): ?>
-                <div class="text-danger mb-1"><?= $categoryError; ?></div>
-            <?php endif; ?>
+            <label for="category" class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
             <select id="category" name="category" class="form-select" required>
-                <option disabled selected>Select Category</option>
+                <option value="" selected disabled>Select Category</option>
                 <?php foreach ($categories as $category): ?>
-                    <option value="<?= $category['category_code']; ?>"
-                        <?= (isset($_POST['category']) && $_POST['category'] === $category['category_code']) ? 'selected' : ''; ?>>
+                    <option value="<?= $category['category_code']; ?>">
                         <?= $category['description']; ?>
                     </option>
                 <?php endforeach; ?>
@@ -120,9 +104,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <!-- Item -->
         <div class="col-md-4">
-            <label for="item" class="form-label">Item</label>
+            <label for="item" class="form-label fw-semibold">Item <span class="text-danger">*</span></label>
             <select id="item" name="item" class="form-select" required>
-                <option disabled selected>Select Item</option>
+                <option value="" selected disabled>Select Item</option>
                 <?php foreach ($items as $item): ?>
                     <option value="<?= $item['item_code']; ?>" data-category="<?= $item['category_code']; ?>">
                         <?= $item['item_code']; ?> - <?= $item['name']; ?>
@@ -133,16 +117,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <!-- Year -->
         <div class="col-md-4">
-            <label for="year" class="form-label">Year</label>
-            <input type="number" class="form-control" id="year" name="year" placeholder="Enter year"
-                   value="<?= date('Y'); ?>" min="2020" max="2100" required>
+            <label for="year" class="form-label fw-semibold">Year <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="year" name="year" value="<?= date('Y'); ?>" min="2020" max="2100" required>
         </div>
 
         <!-- Budget -->
         <div class="col-md-4">
-            <label for="budget" class="form-label">Budget</label>
+            <label for="budget" class="form-label fw-semibold">Budget <span class="text-danger">*</span></label>
             <select id="budget" name="budget" class="form-select" required>
-                <option disabled selected>Choose Budget</option>
+                <option value="" selected disabled>Choose Budget</option>
                 <?php
                 $budget_sql = "SELECT * FROM budget";
                 $budget_result = $connect->query($budget_sql);
@@ -151,36 +134,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
                 ?>
             </select>
-            <?php if (!empty($budgetError)): ?>
-                <div class="text-danger mb-1"><?= $budgetError; ?></div>
-            <?php endif; ?>
         </div>
 
         <!-- Unit Price -->
         <div class="col-md-4">
-            <label for="unit_price" class="form-label">Unit Price (Rs)</label>
+            <label for="unit_price" class="form-label fw-semibold">Unit Price (Rs) <span class="text-danger">*</span></label>
             <input type="number" class="form-control" id="unit_price" name="unit_price" step="0.01" min="0" required>
         </div>
 
         <!-- Quantity -->
         <div class="col-md-4">
-            <label for="quantity" class="form-label">Quantity</label>
-            <?php if (!empty($quantityError)): ?>
-                <div class="text-danger mb-1"><?= $quantityError; ?></div>
-            <?php endif; ?>
-            <input type="number" class="form-control <?= !empty($quantityError) ? 'is-invalid' : ''; ?>"
-                   id="quantity" name="quantity" min="1" required>
+            <label for="quantity" class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
         </div>
 
         <!-- Total Cost -->
         <div class="col-md-4">
-            <label for="total_cost" class="form-label">Total Cost (Rs)</label>
+            <label for="total_cost" class="form-label fw-semibold">Total Cost (Rs)</label>
             <input type="text" class="form-control" id="total_cost" name="total_cost" readonly>
         </div>
 
         <!-- Reason -->
         <div class="col-md-4">
-            <label for="reason" class="form-label">Reason</label>
+            <label for="reason" class="form-label fw-semibold">Reason</label>
             <select id="reason" name="reason" class="form-select">
                 <option value="New">New</option>
                 <option value="Replace">Replace</option>
@@ -189,25 +165,53 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <!-- Justification -->
         <div class="col-md-12">
-            <label for="justification" class="form-label">Justification</label>
+            <label for="justification" class="form-label fw-semibold">Justification <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="justification" name="justification" required>
         </div>
 
         <!-- Remark -->
         <div class="col-md-12">
-            <label for="remark" class="form-label">Remark</label>
+            <label for="remark" class="form-label fw-semibold">Remark</label>
             <input type="text" class="form-control" id="remark" name="remark">
         </div>
 
-        <div class="col-12 text-center">
-            <button type="submit" class="btn btn-primary px-5 py-2">ADD</button>
+        <div class="col-12 text-center mt-4">
+            <button type="submit" class="btn btn-primary px-5 py-2 fw-semibold">
+                <i class="bi bi-plus-circle"></i> ADD
+            </button>
         </div>
     </form>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+    .container-fluid {
+        max-width: 1100px;
+    }
+    .form-label {
+        font-size: 1rem;
+        font-weight: 500;
+    }
+    .form-select, .form-control {
+        border-radius: 0.5rem;
+        font-size: 1rem;
+    }
+    .btn-primary {
+        border-radius: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .shadow-lg {
+        box-shadow: 0 8px 32px rgba(13,41,87,0.13) !important;
+    }
+    .border-primary {
+        border-width: 2px !important;
+    }
+</style>
+
 <?php include('includes/scripts.php'); ?>
 
-<!-- ✅ JS Scripts -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const itemSelect = document.getElementById("item");
@@ -237,17 +241,20 @@ document.addEventListener("DOMContentLoaded", function () {
                     unitPriceInput.value = data.price || '';
                     updateTotalCost();
                 });
+        } else {
+            unitPriceInput.value = '';
+            updateTotalCost();
         }
     });
 
     // Update year based on selected budget
     budgetSelect.addEventListener("change", () => {
         const selected = budgetSelect.options[budgetSelect.selectedIndex];
-        const name = selected.getAttribute('data-name');
+        const name = selected ? selected.getAttribute('data-name') : '';
         const currentYear = new Date().getFullYear();
-        if (name.includes("next year")) {
+        if (name && name.includes("next year")) {
             yearInput.value = currentYear + 1;
-        } else if (name.includes("revised")) {
+        } else if (name && name.includes("revised")) {
             yearInput.value = currentYear;
         }
     });
