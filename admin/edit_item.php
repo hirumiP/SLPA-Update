@@ -83,6 +83,7 @@ mysqli_stmt_close($stmt);
         </div>
         
         <button type="submit" class="btn btn-primary">Update Stock</button>
+        <a href="item_view.php" class="btn btn-secondary ms-2">Back</a>
     </form>
 </div>
 </body>
