@@ -42,16 +42,21 @@ $pendingCount = mysqli_num_rows($result);
 
     <?php if ($pendingCount > 0): ?>
         <!-- Alert for Pending Requests -->
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <strong>Attention!</strong> You have <?php echo $pendingCount; ?> item request(s) pending approval.
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+        <a href="item_req.php" style="text-decoration: none;">
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong>Attention!</strong> You have <?php echo $pendingCount; ?> item request(s) pending approval.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</a>
+
     <?php else: ?>
         <!-- Alert for No Pending Requests -->
+         <a href="item_req.php" style="text-decoration: none;">
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <strong>Good News!</strong> There are no pending item requests for approval.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+        </a>
     <?php endif; ?>
 
 </div>
