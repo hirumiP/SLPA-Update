@@ -11,6 +11,7 @@ include(__DIR__ . '/../user/includes/dbc.php');
 
 $division = $_SESSION['division'];
 $quantityError = "";
+$categoryError = "";
 
 // Fetch categories
 $categories = [];
@@ -32,23 +33,30 @@ if ($budget_result->num_rows > 0) {
     }
 }
 
-// Process form
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $division = $_POST['division'];
-    $item_code = $_POST['item'];
-    $year = !empty($_POST['year']) ? $_POST['year'] : null;
-    $justification = trim($_POST['justification']);
-    $reason = $_POST['reason'];
-    $unit_price = $_POST['unit_price'];
-    $quantity = $_POST['quantity'];
-    $budget_id = $_POST['budget'];
-    $remark = $_POST['remark'];
+    $category_code = $_POST['category'] ?? '';
+    $item_code = $_POST['item'] ?? '';
+    $division = $_POST['division'] ?? '';
+    $year = $_POST['year'] ?? '';
+    $budget_id = $_POST['budget'] ?? '';
+    $unit_price = $_POST['unit_price'] ?? '';
+    $quantity = $_POST['quantity'] ?? '';
+    $reason = $_POST['reason'] ?? '';
+    $justification = trim($_POST['justification'] ?? '');
+    $remark = $_POST['remark'] ?? '';
+
+    // Validations
+    if (empty($category_code)) {
+        $categoryError = "Please select a category.";
+    }
+
+    if (!is_numeric($quantity) || $quantity <= 0) {
+        $quantityError = "Quantity must be greater than 0.";
+    }
 
     if (empty($justification)) {
         echo "<div class='alert alert-danger text-center'>Justification is required.</div>";
-    } elseif (!is_numeric($quantity) || intval($quantity) <= 0) {
-        $quantityError = "Please enter a valid quantity.";
-    } else {
+    } elseif (empty($categoryError) && empty($quantityError)) {
         $stmt = $connect->prepare("INSERT INTO item_requests 
             (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -79,11 +87,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="container-fluid px-4">
     <h2 class="text-center mb-4">Item Request For Budget 2025</h2>
-    <form method="POST" class="row g-3 shadow-lg p-5 border border-2 border-primary rounded-3 bg-light">
+    <form method="POST" class="row g-3 shadow-lg p-5 border border-2 border-primary rounded-3 bg-light" id="requestForm">
 
-        <!-- Division -->
         <div class="col-md-4">
-            <label for="division" class="form-label">Division</label>
+            <label class="form-label">Division</label>
             <input type="text" class="form-control" value="<?= htmlspecialchars($division); ?>" readonly>
             <input type="hidden" name="division" value="<?= htmlspecialchars($division); ?>">
         </div>
@@ -91,11 +98,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Category -->
         <div class="col-md-4">
             <label for="category" class="form-label">Category</label>
-            <select id="category" name="category" class="form-select">
+            <?php if (!empty($categoryError)): ?>
+                <div class="text-danger mb-1"><?= $categoryError; ?></div>
+            <?php endif; ?>
+            <select id="category" name="category" class="form-select <?= !empty($categoryError) ? 'is-invalid' : ''; ?>" required>
                 <option value="">Select Category</option>
                 <?php foreach ($categories as $cat): ?>
                     <option value="<?= $cat['category_code']; ?>">
-                        <?= htmlspecialchars($cat['category_code'] . ' - ' . $cat['description']); ?>
+                        <?= $cat['category_code'] . ' - ' . $cat['description']; ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -112,8 +122,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Year -->
         <div class="col-md-4">
             <label for="year" class="form-label">Year</label>
-            <input type="number" class="form-control" id="year" name="year"
-                   value="<?= date('Y'); ?>" min="2020" max="2100" required>
+            <input type="number" class="form-control" id="year" name="year" min="2020" max="2100" value="<?= date('Y'); ?>" required>
         </div>
 
         <!-- Budget -->
@@ -132,8 +141,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Unit Price -->
         <div class="col-md-4">
             <label for="unit_price" class="form-label">Unit Price (Rs)</label>
-            <input type="number" class="form-control" id="unit_price" name="unit_price"
-                   placeholder="Enter unit price" step="0.01" min="0">
+            <input type="number" class="form-control" id="unit_price" name="unit_price" step="0.01" min="0">
         </div>
 
         <!-- Quantity -->
@@ -142,8 +150,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <?php if (!empty($quantityError)): ?>
                 <div class="text-danger mb-1"><?= $quantityError; ?></div>
             <?php endif; ?>
-            <input type="number" class="form-control <?= !empty($quantityError) ? 'is-invalid' : ''; ?>"
-                   name="quantity" min="1" required>
+            <input type="number" class="form-control <?= !empty($quantityError) ? 'is-invalid' : ''; ?>" name="quantity" min="1" required>
         </div>
 
         <!-- Reason -->
@@ -176,7 +183,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <?php include('includes/scripts.php'); ?>
 
-<!-- JavaScript for dynamic functionality -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const categorySelect = document.getElementById("category");
@@ -185,14 +191,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const budgetSelect = document.getElementById("budget");
     const yearInput = document.getElementById("year");
 
-    // Load items based on category
     categorySelect.addEventListener("change", function () {
         const categoryCode = this.value;
-
-        itemSelect.innerHTML = '<option disabled selected>Select Item</option>';
+        itemSelect.innerHTML = '<option value="">Select Item</option>';
 
         if (categoryCode) {
-            fetch(`get_items_by_category.php?category_code=${encodeURIComponent(categoryCode)}`)
+            fetch(`get_items_by_category.php?category_code=${categoryCode}`)
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(item => {
@@ -205,7 +209,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Load unit price on item selection
     itemSelect.addEventListener("change", function () {
         const itemCode = this.value;
         if (itemCode) {
@@ -217,7 +220,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Auto-fill year based on budget name
     function updateYearFromBudget() {
         const selected = budgetSelect.options[budgetSelect.selectedIndex];
         const name = selected?.dataset?.name || '';
@@ -231,6 +233,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     budgetSelect.addEventListener("change", updateYearFromBudget);
-    updateYearFromBudget(); // Initial call
+    updateYearFromBudget();
 });
 </script>
