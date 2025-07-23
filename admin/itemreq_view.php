@@ -130,10 +130,9 @@ $result = mysqli_query($connect, $sql);
                 <tr>
                     <th>Division</th>
                     <th>Item Name</th>
-                    <th>Budget Name</th>
-                    <th>Year</th>
-                    <th>Unit Price</th>
                     <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total Cost</th>
                     <th>Reason</th>
                     <th>Justification</th>
                     <th>Remark</th>
@@ -145,17 +144,21 @@ $result = mysqli_query($connect, $sql);
                         <tr>
                             <td><?= htmlspecialchars($row['division']) ?></td>
                             <td><?= htmlspecialchars($row['item_name']) ?></td>
-                            <td><?= htmlspecialchars($row['budget_name']) ?></td>
-                            <td><?= htmlspecialchars($row['year']) ?></td>
-                            <td><?= htmlspecialchars($row['unit_price']) ?></td>
                             <td><?= htmlspecialchars($row['quantity']) ?></td>
+                            <td><?= htmlspecialchars($row['unit_price']) ?></td>
+                            <td>
+                                <?php
+                                    $total = floatval($row['unit_price']) * floatval($row['quantity']);
+                                    echo number_format($total, 2);
+                                ?>
+                            </td>
                             <td><?= htmlspecialchars($row['reason']) ?></td>
                             <td><?= htmlspecialchars($row['justification']) ?></td>
                             <td><?= htmlspecialchars($row['remark']) ?></td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
-                    <tr><td colspan="9">No approved data found</td></tr>
+                    <tr><td colspan="8">No approved data found</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
