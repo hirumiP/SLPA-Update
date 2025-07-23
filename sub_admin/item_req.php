@@ -51,11 +51,9 @@ $result = mysqli_query($connect, $sql);
 table, th, td {
     border: 1px solid gray !important;
 }
-
 table {
     border-collapse: collapse;
 }
-
 </style>
 
 <div class="container-fluid px-4">
@@ -75,7 +73,6 @@ table {
 
     <div class="table-container">
         <table class="table table-bordered">
-
             <thead>
                 <tr>
                     <th>Item Name</th>
@@ -94,39 +91,40 @@ table {
                 <?php
                 if ($result && mysqli_num_rows($result) > 0) {
                     while ($row = mysqli_fetch_assoc($result)) {
-                        // Add row class based on status
                         $rowClass = ($row['status'] == 'Approved') ? 'bg-light-green' : 'bg-light-red';
-
-                        echo "
-                        <tr class='$rowClass'>
-                            <td>{$row['item_name']}</td>
-                            <td>{$row['budget_name']}</td>
-                            <td>{$row['year']}</td>
-                            <td>{$row['unit_price']}</td>
-                            <td>{$row['quantity']}</td>
-                            <td>{$row['reason']}</td>
-                            <td>{$row['justification']}</td>
-                            <td>{$row['remark']}</td>
-                            <td>";
-
-                        if ($row['status'] == 'Approved') {
-                            echo "<span class='badge bg-success'>Approved</span>";
-                        } else {
-                            echo "<span class='badge bg-warning text-dark'>Pending</span>";
-                        }
-
-                        echo "</td>
-                            <td class='no-print'>
-                                <button 
-                                    class='btn btn-primary btn-sm'
-                                    data-bs-toggle='modal'
-                                    data-bs-target='#approveModal'
-                                    onclick='fillForm(\"{$row['request_id']}\", \"{$row['unit_price']}\", \"{$row['quantity']}\")'
-                                >
-                                    Approve
-                                </button>
+                        ?>
+                        <tr class="<?= $rowClass; ?>">
+                            <td><?= htmlspecialchars($row['item_name']); ?></td>
+                            <td><?= htmlspecialchars($row['budget_name']); ?></td>
+                            <td><?= htmlspecialchars($row['year']); ?></td>
+                            <td><?= htmlspecialchars($row['unit_price']); ?></td>
+                            <td><?= htmlspecialchars($row['quantity']); ?></td>
+                            <td><?= htmlspecialchars($row['reason']); ?></td>
+                            <td><?= htmlspecialchars($row['justification']); ?></td>
+                            <td><?= htmlspecialchars($row['remark']); ?></td>
+                            <td>
+                                <?php if ($row['status'] == 'Approved'): ?>
+                                    <span class="badge bg-success">Approved</span>
+                                <?php else: ?>
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                <?php endif; ?>
                             </td>
-                        </tr>";
+                            <td class="no-print">
+                                <?php if ($row['status'] !== 'Approved'): ?>
+                                    <button 
+                                        class="btn btn-primary btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#approveModal"
+                                        onclick="fillForm('<?= $row['request_id']; ?>', '<?= $row['unit_price']; ?>', '<?= $row['quantity']; ?>')"
+                                    >
+                                        Approve
+                                    </button>
+                                <?php else: ?>
+                                    <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php
                     }
                 } else {
                     echo "<tr><td colspan='11'>No data found</td></tr>";
@@ -148,7 +146,6 @@ table {
           </div>
           <div class="modal-body">
               <input type="hidden" name="request_id" id="request_id">
-              
               <div class="mb-3">
                   <label for="unit_price" class="form-label">Unit Price</label>
                   <input type="text" class="form-control" id="unit_price" name="unit_price" required>
