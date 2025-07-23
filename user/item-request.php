@@ -15,6 +15,7 @@ $division = $_SESSION['division'];
 
 $quantityError = "";
 $categoryError = "";
+$budgetError = "";
 
 // Fetch categories
 $category_query = "SELECT category_code, description FROM categories";
@@ -47,6 +48,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $categoryError = "Please select a category.";
     }
 
+    // Validate budget
+    if (empty($budget_id) || !is_numeric($budget_id)) {
+        $budgetError = "Please select a valid budget.";
+    }
+
     // Validate quantity
     if (!isset($_POST['quantity']) || !is_numeric($_POST['quantity']) || intval($_POST['quantity']) <= 0) {
         $quantityError = "Please enter a valid quantity (greater than 0).";
@@ -55,7 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Proceed if no errors
-    if (empty($quantityError) && empty($categoryError)) {
+    if (empty($quantityError) && empty($categoryError) && empty($budgetError)) {
         $stmt = $connect->prepare("INSERT INTO item_requests 
             (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -145,6 +151,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
                 ?>
             </select>
+            <?php if (!empty($budgetError)): ?>
+                <div class="text-danger mb-1"><?= $budgetError; ?></div>
+            <?php endif; ?>
         </div>
 
         <!-- Unit Price -->

@@ -42,12 +42,40 @@ $result = mysqli_query($connect, $sql);
         display: none !important;
     }
 }
+.bg-light-red {
+    background-color: #f8d7da !important;
+}
+.bg-light-green {
+    background-color: #d4edda !important;
+}
+table, th, td {
+    border: 1px solid gray !important;
+}
+
+table {
+    border-collapse: collapse;
+}
+
 </style>
 
 <div class="container-fluid px-4">
-    <h2 class="text-center mb-4">Item Request Plans (Division: <?php echo $loggedDivision; ?>)</h2>
+    <h2 class="text-center mb-4">Item Requests - Division: <?php echo $loggedDivision; ?></h2>
+
+    <?php if (isset($_GET['msg']) && $_GET['msg'] == 'approved'): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            ✅ Item request approved successfully.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php elseif (isset($_GET['msg']) && $_GET['msg'] == 'deleted'): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            ❌ Item request deleted successfully.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
     <div class="table-container">
-        <table class="table table-bordered table-left">
+        <table class="table table-bordered">
+
             <thead>
                 <tr>
                     <th>Item Name</th>
@@ -66,8 +94,11 @@ $result = mysqli_query($connect, $sql);
                 <?php
                 if ($result && mysqli_num_rows($result) > 0) {
                     while ($row = mysqli_fetch_assoc($result)) {
+                        // Add row class based on status
+                        $rowClass = ($row['status'] == 'Approved') ? 'bg-light-green' : 'bg-light-red';
+
                         echo "
-                        <tr>
+                        <tr class='$rowClass'>
                             <td>{$row['item_name']}</td>
                             <td>{$row['budget_name']}</td>
                             <td>{$row['year']}</td>
@@ -137,11 +168,6 @@ $result = mysqli_query($connect, $sql);
 </div>
 
 <script>
-function printPage() {
-    window.print();
-}
-
-// ✅ Fills modal with selected request data
 function fillForm(id, unit_price, quantity) {
     document.getElementById('request_id').value = id;
     document.getElementById('unit_price').value = unit_price;
