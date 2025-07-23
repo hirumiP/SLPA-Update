@@ -97,6 +97,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <div class="col-md-4">
+            <label for="year" class="form-label">Year</label>
+            <input type="number" class="form-control" id="year" name="year" placeholder="Enter year"
+                   value="<?= isset($_POST['year']) ? htmlspecialchars($_POST['year']) : date('Y'); ?>" min="2020" max="2100" required>
+        </div>
+
+        <div class="col-md-4">
             <label for="budget" class="form-label">Budget</label>
             <select id="budget" name="budget" class="form-select">
                 <option disabled <?= !isset($_POST['budget']) ? 'selected' : ''; ?>>Choose Budget</option>
@@ -109,12 +115,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
                 ?>
             </select>
-        </div>
-
-        <div class="col-md-4">
-            <label for="year" class="form-label">Year</label>
-            <input type="number" class="form-control" id="year" name="year" placeholder="Enter year"
-                   value="<?= isset($_POST['year']) ? htmlspecialchars($_POST['year']) : date('Y'); ?>" min="2020" max="2100" required>
         </div>
 
         <div class="col-md-4">
