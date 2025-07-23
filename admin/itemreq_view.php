@@ -54,121 +54,143 @@ $result = mysqli_query($connect, $sql);
 ?>
 
 <div class="container-fluid px-4">
-    <h1 class="mt-4">SLPA Budget Management System</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item active">Approved Item Requests</li>
-        <?php include('includes/filter.php'); ?>
+    <h1 class="mt-4 fw-bold text-primary">SLPA Budget Management System</h1>
+    <ol class="breadcrumb mb-4 bg-white shadow-sm rounded py-2 px-3">
+        <li class="breadcrumb-item active fs-5">Approved Item Requests</li>
     </ol>
 
+    <?php include('includes/filter.php'); ?>
+    <!-- Filter Section -->
+    <div class="card shadow-sm mb-4 no-print" style="background-color: #d4e8fdff;">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end justify-content-center">
+                <!-- Year Dropdown -->
+                <div class="col-md-3">
+                    <label for="year" class="form-label fw-semibold">Year</label>
+                    <select name="year" id="year" class="form-select">
+                        <option value="">All Years</option>
+                        <?php
+                        mysqli_data_seek($yearResult, 0);
+                        while ($row = mysqli_fetch_assoc($yearResult)): ?>
+                            <option value="<?= $row['year'] ?>" <?= ($selectedYear == $row['year']) ? 'selected' : '' ?>>
+                                <?= $row['year'] ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
 
-    <style>
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-        }
+                <!-- Budget Type Dropdown -->
+                <div class="col-md-3">
+                    <label for="budget" class="form-label fw-semibold">Budget Type</label>
+                    <select name="budget" id="budget" class="form-select">
+                        <option value="">All Budgets</option>
+                        <?php
+                        mysqli_data_seek($budgetResult, 0);
+                        while ($row = mysqli_fetch_assoc($budgetResult)): ?>
+                            <option value="<?= $row['budget'] ?>" <?= ($selectedBudget == $row['budget']) ? 'selected' : '' ?>>
+                                <?= $row['budget'] ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
 
-        /* Table enhancements */
-        table th, table td {
-            border: 1px solid black !important;
-        }
-    </style>
+                <!-- Division Dropdown -->
+                <div class="col-md-3">
+                    <label for="division" class="form-label fw-semibold">Division (Optional)</label>
+                    <select name="division" id="division" class="form-select">
+                        <option value="">All Divisions</option>
+                        <?php
+                        mysqli_data_seek($divisionResult, 0);
+                        while ($row = mysqli_fetch_assoc($divisionResult)): ?>
+                            <option value="<?= $row['division'] ?>" <?= ($selectedDivision == $row['division']) ? 'selected' : '' ?>>
+                                <?= $row['division'] ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
 
-    <!-- ✅ Filter Form -->
-    <div class="d-flex justify-content-center mb-4 no-print">
-        <form method="GET" class="d-flex flex-wrap align-items-end gap-3">
-            <!-- Year Dropdown -->
-            <div>
-                <label for="year" class="form-label">Year</label>
-                <select name="year" id="year" class="form-select" style="min-width: 200px;">
-                    <option value="">All Years</option>
-                    <?php while ($row = mysqli_fetch_assoc($yearResult)): ?>
-                        <option value="<?= $row['year'] ?>" <?= ($selectedYear == $row['year']) ? 'selected' : '' ?>>
-                            <?= $row['year'] ?>
-                        </option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
-
-            <!-- Budget Type Dropdown -->
-            <div>
-                <label for="budget" class="form-label">Budget Type</label>
-                <select name="budget" id="budget" class="form-select" style="min-width: 200px;">
-                    <option value="">All Budgets</option>
-                    <?php while ($row = mysqli_fetch_assoc($budgetResult)): ?>
-                        <option value="<?= $row['budget'] ?>" <?= ($selectedBudget == $row['budget']) ? 'selected' : '' ?>>
-                            <?= $row['budget'] ?>
-                        </option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
-
-            <!-- Division Dropdown -->
-            <div>
-                <label for="division" class="form-label">Division (Optional)</label>
-                <select name="division" id="division" class="form-select" style="min-width: 200px;">
-                    <option value="">All Divisions</option>
-                    <?php while ($row = mysqli_fetch_assoc($divisionResult)): ?>
-                        <option value="<?= $row['division'] ?>" <?= ($selectedDivision == $row['division']) ? 'selected' : '' ?>>
-                            <?= $row['division'] ?>
-                        </option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
-
-            <!-- Submit Button -->
-            <div>
-                <button type="submit" class="btn btn-primary mt-4">Filter</button>
-            </div>
-        </form>
+                <!-- Submit Button -->
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-success fw-semibold">
+                        <i class="bi bi-funnel-fill"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <!-- ✅ Data Table -->
-    <div class="table-responsive">
-        <table class="table table-bordered text-center w-100">
-            <thead style="background-color: #003366; color: #ffffff;">
-                <tr>
-                    <th>Division</th>
-                    <th>Item Name</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Total Cost</th>
-                    <th>Reason</th>
-                    <th>Justification</th>
-                    <th>Remark</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($result && mysqli_num_rows($result) > 0): ?>
-                    <?php while ($row = mysqli_fetch_assoc($result)): ?>
+    <!-- Data Table -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle text-center">
+                    <thead class="table-dark">
                         <tr>
-                            <td><?= htmlspecialchars($row['division']) ?></td>
-                            <td><?= htmlspecialchars($row['item_name']) ?></td>
-                            <td><?= htmlspecialchars($row['quantity']) ?></td>
-                            <td><?= htmlspecialchars($row['unit_price']) ?></td>
-                            <td>
-                                <?php
-                                    $total = floatval($row['unit_price']) * floatval($row['quantity']);
-                                    echo number_format($total, 2);
-                                ?>
-                            </td>
-                            <td><?= htmlspecialchars($row['reason']) ?></td>
-                            <td><?= htmlspecialchars($row['justification']) ?></td>
-                            <td><?= htmlspecialchars($row['remark']) ?></td>
+                            <th>Division</th>
+                            <th>Item Name</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total Cost</th>
+                            <th>Reason</th>
+                            <th>Justification</th>
+                            <th>Remark</th>
                         </tr>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <tr><td colspan="8">No approved data found</td></tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                    </thead>
+                    <tbody>
+                        <?php if ($result && mysqli_num_rows($result) > 0): ?>
+                            <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['division']) ?></td>
+                                    <td><?= htmlspecialchars($row['item_name']) ?></td>
+                                    <td><?= htmlspecialchars($row['quantity']) ?></td>
+                                    <td><?= number_format($row['unit_price'], 2) ?></td>
+                                    <td class="fw-bold text-success">
+                                        <?php
+                                            $total = floatval($row['unit_price']) * floatval($row['quantity']);
+                                            echo number_format($total, 2);
+                                        ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($row['reason']) ?></td>
+                                    <td><?= htmlspecialchars($row['justification']) ?></td>
+                                    <td><?= htmlspecialchars($row['remark']) ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr><td colspan="8" class="text-muted">No approved data found</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- ✅ Print Button -->
+    <!-- Print Button -->
     <!-- <div class="text-end mb-3 no-print">
-        <button class="btn btn-primary" onclick="window.print()">Print</button>
+        <button class="btn btn-outline-primary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
     </div> -->
 </div>
+
+<!-- Optional: Add Bootstrap Icons CDN for icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .table {
+            font-size: 12px;
+        }
+    }
+    .card {
+        border-radius: 0.75rem;
+    }
+    .table th, .table td {
+        vertical-align: middle !important;
+    }
+</style>
 
 <?php
 
