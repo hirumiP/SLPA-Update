@@ -62,7 +62,7 @@ $result = mysqli_stmt_get_result($stmt);
 </style>
 
 <div class="container-fluid px-4">
-    <h2 class="text-center mb-4">Item Requests (Division: <?php echo htmlspecialchars($user_division); ?>)</h2>
+    <h2 class="text-center mb-4">Item Requests - Division: <?php echo htmlspecialchars($user_division); ?></h2>
     
     <div class="table-container">
         <table class="table table-bordered table-left">
