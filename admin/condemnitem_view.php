@@ -10,9 +10,9 @@ include('includes/header.php');
 include('includes/dbc.php');
 ?>
 <div class="container-fluid px-4">
-    <h1 class="mt-4">SLPA Budget Management System</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item active">Condemned Item</li>
+    <h1 class="mt-4 fw-bold text-primary">SLPA Budget Management System</h1>
+    <ol class="breadcrumb mb-4 bg-white shadow-sm rounded py-2 px-3">
+        <li class="breadcrumb-item active fs-5">Condemned Item </li>
     </ol>
 <!DOCTYPE html>
 <html lang="en">
