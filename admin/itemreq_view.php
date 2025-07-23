@@ -10,167 +10,164 @@ if (!isset($_SESSION['employee_ID'])) {
 include('includes/header.php');
 include('includes/dbc.php');
 
-// Handle filter values
-$selectedYear = isset($_GET['year']) ? $_GET['year'] : '';
-$selectedBudget = isset($_GET['budget']) ? $_GET['budget'] : '';
+// Filters
+$selectedYear = $_GET['year'] ?? '';
+$selectedBudget = $_GET['budget'] ?? '';
+$selectedDivision = $_GET['division'] ?? '';
 
-// Fetch years and budgets for dropdowns
-$yearQuery = "SELECT DISTINCT year FROM item_requests WHERE status = 'Approved' ORDER BY year DESC";
-$yearResult = mysqli_query($connect, $yearQuery);
+// Get filter values
+$yearResult = mysqli_query($connect, "SELECT DISTINCT year FROM item_requests ORDER BY year DESC");
+$budgetResult = mysqli_query($connect, "SELECT DISTINCT budget FROM budget ORDER BY budget ASC");
+$divisionResult = mysqli_query($connect, "SELECT DISTINCT division FROM item_requests ORDER BY division ASC");
 
-$budgetQuery = "SELECT DISTINCT b.budget FROM item_requests ir 
-                LEFT JOIN budget b ON ir.budget_id = b.id 
-                WHERE ir.status = 'Approved'";
-$budgetResult = mysqli_query($connect, $budgetQuery);
+// SQL query with filters
+$sql = "SELECT 
+            ir.division, 
+            i.name AS item_name, 
+            b.budget AS budget_name, 
+            ir.year, 
+            ir.unit_price, 
+            ir.quantity, 
+            ir.reason, 
+            ir.description AS justification,
+            ir.remark
+        FROM 
+            item_requests ir
+        LEFT JOIN 
+            items i ON ir.item_code = i.item_code
+        LEFT JOIN 
+            budget b ON ir.budget_id = b.id
+        WHERE 
+            ir.status = 'Approved'";
+
+if (!empty($selectedYear)) {
+    $sql .= " AND ir.year = '" . mysqli_real_escape_string($connect, $selectedYear) . "'";
+}
+if (!empty($selectedBudget)) {
+    $sql .= " AND b.budget = '" . mysqli_real_escape_string($connect, $selectedBudget) . "'";
+}
+if (!empty($selectedDivision)) {
+    $sql .= " AND ir.division = '" . mysqli_real_escape_string($connect, $selectedDivision) . "'";
+}
+
+$result = mysqli_query($connect, $sql);
 ?>
 
 <div class="container-fluid px-4">
     <h1 class="mt-4">SLPA Budget Management System</h1>
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item active">Approved Item Requests</li>
+        <?php include('includes/filter.php'); ?>
     </ol>
 
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Budget Management</title>
-        <!-- Bootstrap CSS -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-        <style>
-            @media print {
-                .no-print {
-                    display: none !important;
-                }
+
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
             }
+        }
 
-            table, th, td {
-                border: 1px solid black !important;
-            }
+        /* Table enhancements */
+        table th, table td {
+            border: 1px solid black !important;
+        }
+    </style>
 
-            table {
-                border-collapse: collapse;
-            }
-        </style>
-    </head>
-    <body>
-        <?php include('includes/filter.php'); ?>
+    <!-- ✅ Filter Form -->
+    <div class="d-flex justify-content-center mb-4 no-print">
+        <form method="GET" class="d-flex flex-wrap align-items-end gap-3">
+            <!-- Year Dropdown -->
+            <div>
+                <label for="year" class="form-label">Year</label>
+                <select name="year" id="year" class="form-select" style="min-width: 200px;">
+                    <option value="">All Years</option>
+                    <?php while ($row = mysqli_fetch_assoc($yearResult)): ?>
+                        <option value="<?= $row['year'] ?>" <?= ($selectedYear == $row['year']) ? 'selected' : '' ?>>
+                            <?= $row['year'] ?>
+                        </option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
 
-        <!-- ✅ Centered, wider dropdowns -->
-<div class="d-flex justify-content-center mb-4 no-print">
-    <form method="GET" class="d-flex flex-wrap align-items-end gap-3">
-        <div>
-            <label for="year" class="form-label">Year</label>
-            <select name="year" id="year" class="form-select" style="min-width: 200px;">
-                <option value="">All Years</option>
-                <?php while ($row = mysqli_fetch_assoc($yearResult)): ?>
-                    <option value="<?= $row['year'] ?>" <?= ($selectedYear == $row['year']) ? 'selected' : '' ?>>
-                        <?= $row['year'] ?>
-                    </option>
-                <?php endwhile; ?>
-            </select>
-        </div>
+            <!-- Budget Type Dropdown -->
+            <div>
+                <label for="budget" class="form-label">Budget Type</label>
+                <select name="budget" id="budget" class="form-select" style="min-width: 200px;">
+                    <option value="">All Budgets</option>
+                    <?php while ($row = mysqli_fetch_assoc($budgetResult)): ?>
+                        <option value="<?= $row['budget'] ?>" <?= ($selectedBudget == $row['budget']) ? 'selected' : '' ?>>
+                            <?= $row['budget'] ?>
+                        </option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
 
-        <div>
-            <label for="budget" class="form-label">Budget Type</label>
-            <select name="budget" id="budget" class="form-select" style="min-width: 200px;">
-                <option value="">All Budgets</option>
-                <?php while ($row = mysqli_fetch_assoc($budgetResult)): ?>
-                    <option value="<?= $row['budget'] ?>" <?= ($selectedBudget == $row['budget']) ? 'selected' : '' ?>>
-                        <?= $row['budget'] ?>
-                    </option>
-                <?php endwhile; ?>
-            </select>
-        </div>
+            <!-- Division Dropdown -->
+            <div>
+                <label for="division" class="form-label">Division (Optional)</label>
+                <select name="division" id="division" class="form-select" style="min-width: 200px;">
+                    <option value="">All Divisions</option>
+                    <?php while ($row = mysqli_fetch_assoc($divisionResult)): ?>
+                        <option value="<?= $row['division'] ?>" <?= ($selectedDivision == $row['division']) ? 'selected' : '' ?>>
+                            <?= $row['division'] ?>
+                        </option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
 
-        <div>
-            <button type="submit" class="btn btn-primary mt-4">Filter</button>
-        </div>
-    </form>
+            <!-- Submit Button -->
+            <div>
+                <button type="submit" class="btn btn-primary mt-4">Filter</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ✅ Data Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered text-center w-100">
+            <thead style="background-color: #003366; color: #ffffff;">
+                <tr>
+                    <th>Division</th>
+                    <th>Item Name</th>
+                    <th>Budget Name</th>
+                    <th>Year</th>
+                    <th>Unit Price</th>
+                    <th>Quantity</th>
+                    <th>Reason</th>
+                    <th>Justification</th>
+                    <th>Remark</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if ($result && mysqli_num_rows($result) > 0): ?>
+                    <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['division']) ?></td>
+                            <td><?= htmlspecialchars($row['item_name']) ?></td>
+                            <td><?= htmlspecialchars($row['budget_name']) ?></td>
+                            <td><?= htmlspecialchars($row['year']) ?></td>
+                            <td><?= htmlspecialchars($row['unit_price']) ?></td>
+                            <td><?= htmlspecialchars($row['quantity']) ?></td>
+                            <td><?= htmlspecialchars($row['reason']) ?></td>
+                            <td><?= htmlspecialchars($row['justification']) ?></td>
+                            <td><?= htmlspecialchars($row['remark']) ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr><td colspan="9">No approved data found</td></tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ✅ Print Button -->
+    <!-- <div class="text-end mb-3 no-print">
+        <button class="btn btn-primary" onclick="window.print()">Print</button>
+    </div> -->
 </div>
 
-
-        <div class="table-container">
-            <table class="table table-bordered text-center">
-                <thead style="background-color: #003366; color: #ffffff;">
-                    <tr>
-                        <th scope="col">Division</th>
-                        <th scope="col">Item Name</th>
-                        <th scope="col">Budget Name</th>
-                        <th scope="col">Year</th>
-                        <th scope="col">Unit Price</th>
-                        <th scope="col">Quantity</th>
-                        <th scope="col">Reason</th>
-                        <th scope="col">Justification</th>
-                        <th scope="col">Remark</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    // Base query
-                    $sql = "SELECT 
-                                ir.division, 
-                                i.name AS item_name, 
-                                b.budget AS budget_name, 
-                                ir.year, 
-                                ir.unit_price, 
-                                ir.quantity, 
-                                ir.reason, 
-                                ir.description AS justification,
-                                ir.remark
-                            FROM 
-                                item_requests ir
-                            LEFT JOIN 
-                                items i ON ir.item_code = i.item_code
-                            LEFT JOIN 
-                                budget b ON ir.budget_id = b.id
-                            WHERE 
-                                ir.status = 'Approved'";
-
-                    // Add filters
-                    if (!empty($selectedYear)) {
-                        $sql .= " AND ir.year = '" . mysqli_real_escape_string($connect, $selectedYear) . "'";
-                    }
-
-                    if (!empty($selectedBudget)) {
-                        $sql .= " AND b.budget = '" . mysqli_real_escape_string($connect, $selectedBudget) . "'";
-                    }
-
-                    $result = mysqli_query($connect, $sql);
-
-                    if ($result && mysqli_num_rows($result) > 0) {
-                        while ($row = mysqli_fetch_assoc($result)) {
-                            echo "
-                            <tr>
-                                <td>" . htmlspecialchars($row['division']) . "</td>
-                                <td>" . htmlspecialchars($row['item_name']) . "</td>
-                                <td>" . htmlspecialchars($row['budget_name']) . "</td>
-                                <td>" . htmlspecialchars($row['year']) . "</td>
-                                <td>" . htmlspecialchars($row['unit_price']) . "</td>
-                                <td>" . htmlspecialchars($row['quantity']) . "</td>
-                                <td>" . htmlspecialchars($row['reason']) . "</td>
-                                <td>" . htmlspecialchars($row['justification']) . "</td>
-                                <td>" . htmlspecialchars($row['remark']) . "</td>
-                            </tr>";
-                        }
-                    } else {
-                        echo "<tr><td colspan='9'>No approved data found</td></tr>";
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Print Button -->
-        <div class="text-end mb-3 no-print">
-            <button class="btn btn-primary" onclick="window.print()">Print</button>
-        </div>
-
-    </body>
-    </html>
-
 <?php
-include('includes/footer.php');
+
 include('includes/scripts.php');
 ?>
