@@ -8,83 +8,148 @@ if (!isset($_SESSION['employee_ID'])) {
 }
 include('includes/header.php');
 include('includes/dbc.php');
+
+// --- Filter Logic ---
+$selectedYear = $_GET['year'] ?? '';
+$selectedBudget = $_GET['budget'] ?? '';
+
+// Get filter values for dropdowns
+$yearResult = mysqli_query($connect, "SELECT DISTINCT budget_year FROM received_items ORDER BY budget_year DESC");
+$budgetResult = mysqli_query($connect, "SELECT DISTINCT budget_flag FROM received_items ORDER BY budget_flag ASC");
+
+// Build WHERE clause for filters
+$where = "1=1";
+if (!empty($selectedYear)) {
+    $where .= " AND budget_year = '" . mysqli_real_escape_string($connect, $selectedYear) . "'";
+}
+if (!empty($selectedBudget)) {
+    $where .= " AND budget_flag = '" . mysqli_real_escape_string($connect, $selectedBudget) . "'";
+}
 ?>
 <div class="container-fluid px-4">
-    <h1 class="mt-4">SLPA Budget Management System</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item active">Recieved Item</li>
+    <h1 class="mt-4 fw-bold text-primary">SLPA Budget Management System</h1>
+    <ol class="breadcrumb mb-4 bg-white shadow-sm rounded py-2 px-3">
+        <li class="breadcrumb-item active fs-5">Received Item</li>
     </ol>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Budget Management</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <?php
-        include('includes/filter.php');
-    ?>
-    <div class="table-container">
-    <table class="table table-bordered text-center">
-        <thead style="background-color: #003366; color: #ffffff;">
-            <tr>
-                <th scope="col">Received ID</th>
-                <th scope="col">Item Code</th>
-                <th scope="col">Supplier Name</th>
-                <th scope="col">Invoice No</th>
-                <th scope="col">Quantity Received</th>
-                <th scope="col">Unit Price</th>
-                <th scope="col">Budget Year</th>
-                <th scope="col">Budget Flag</th>
-                <th scope="col">Remark</th>
-                <th scope="col">Received Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            $sql = "SELECT * FROM received_items";
-            $result = mysqli_query($connect, $sql);
-            if ($result) {
-                while ($row = mysqli_fetch_assoc($result)) {
-                    $received_id = $row['received_id'];
-                    $item_code = $row['item_code'];
-                    $supplier_name = $row['supplier_name'];
-                    $invoice_no = $row['invoice_no'];
-                    $qty_received = $row['qty_received'];
-                    $unit_price = $row['unit_price'];
-                    $budget_year = $row['budget_year'];
-                    $budget_flag = $row['budget_flag'];
-                    $remark = $row['remark'];
-                    $received_date = $row['received_date'];
+ <?php include('includes/filter.php'); ?>
+    <!-- Filter Section -->
+   <div class="card shadow-sm mb-4 no-print" style="background-color: #d4e8fdff;">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end justify-content-center">
+                <!-- Year Dropdown -->
+                <div class="col-md-4">
+                    <label for="year" class="form-label fw-semibold">Year</label>
+                    <select name="year" id="year" class="form-select">
+                        <option value="">All Years</option>
+                        <?php
+                        mysqli_data_seek($yearResult, 0);
+                        while ($row = mysqli_fetch_assoc($yearResult)): ?>
+                            <option value="<?= $row['budget_year'] ?>" <?= ($selectedYear == $row['budget_year']) ? 'selected' : '' ?>>
+                                <?= $row['budget_year'] ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <!-- Budget Flag Dropdown -->
+                <div class="col-md-4">
+                    <label for="budget" class="form-label fw-semibold">Budget Flag</label>
+                    <select name="budget" id="budget" class="form-select">
+                        <option value="">All Budgets</option>
+                        <?php
+                        mysqli_data_seek($budgetResult, 0);
+                        while ($row = mysqli_fetch_assoc($budgetResult)): ?>
+                            <option value="<?= $row['budget_flag'] ?>" <?= ($selectedBudget == $row['budget_flag']) ? 'selected' : '' ?>>
+                                <?= $row['budget_flag'] ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <!-- Submit Button -->
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-success fw-semibold">
+                        <i class="bi bi-funnel-fill"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                    echo '
-                    <tr>
-                        <th scope="row">' . $received_id . '</th>
-                        <td>' . $item_code . '</td>
-                        <td>' . $supplier_name . '</td>
-                        <td>' . $invoice_no . '</td>
-                        <td>' . $qty_received . '</td>
-                        <td>' . $unit_price . '</td>
-                        <td>' . $budget_year. '</td>
-                        <td>' . $budget_flag . '</td>
-                        <td>' . $remark . '</td>
-                        <td>' . $received_date . '</td>
-                    </tr>';
-                
-                }
-            } else {
-                die("Query failed: " . mysqli_error($connect));
-            }
-            ?>
-        </tbody>
+    <!-- Received Items Table -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">Received ID</th>
+                            <th scope="col">Item Code</th>
+                            <th scope="col">Supplier Name</th>
+                            <th scope="col">Invoice No</th>
+                            <th scope="col">Quantity Received</th>
+                            <th scope="col">Unit Price</th>
+                            <th scope="col">Budget Year</th>
+                            <th scope="col">Budget Flag</th>
+                            <th scope="col">Remark</th>
+                            <th scope="col">Received Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $sql = "SELECT * FROM received_items WHERE $where";
+                        $result = mysqli_query($connect, $sql);
+                        if ($result) {
+                            while ($row = mysqli_fetch_assoc($result)) {
+                                echo '
+                                <tr>
+                                    <th scope="row">' . htmlspecialchars($row['received_id']) . '</th>
+                                    <td>' . htmlspecialchars($row['item_code']) . '</td>
+                                    <td>' . htmlspecialchars($row['supplier_name']) . '</td>
+                                    <td>' . htmlspecialchars($row['invoice_no']) . '</td>
+                                    <td>' . htmlspecialchars($row['qty_received']) . '</td>
+                                    <td>' . number_format($row['unit_price'], 2) . '</td>
+                                    <td>' . htmlspecialchars($row['budget_year']) . '</td>
+                                    <td>' . htmlspecialchars($row['budget_flag']) . '</td>
+                                    <td>' . htmlspecialchars($row['remark']) . '</td>
+                                    <td>' . htmlspecialchars($row['received_date']) . '</td>
+                                </tr>';
+                            }
+                        } else {
+                            echo '<tr><td colspan="10" class="text-muted">No received items found.</td></tr>';
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap Icons (optional, for future use) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-</body>
-</html>
+<style>
+    .card {
+        border-radius: 0.75rem;
+    }
+    .card-header {
+        font-size: 1.1rem;
+        letter-spacing: 0.5px;
+    }
+    .form-label {
+        font-size: 1rem;
+    }
+    .table th, .table td {
+        vertical-align: middle !important;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+
+<?php
+include('includes/scripts.php');
+?>
 
 
