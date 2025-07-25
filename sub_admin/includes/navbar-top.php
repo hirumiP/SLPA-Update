@@ -34,7 +34,6 @@ $username = $_SESSION['username'] ?? 'User';
                 </li>
                 <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user-cog me-2"></i>Profile</a></li>
                 <li><a class="dropdown-item" href="settings.php"><i class="fas fa-cogs me-2"></i>Settings</a></li>
-                <li><a class="dropdown-item" href="activity_log.php"><i class="fas fa-list-alt me-2"></i>Activity Log</a></li>
                 <li><hr class="dropdown-divider" /></li>
                 <li><a class="dropdown-item text-danger" href="/SLPA-Update/logout.php"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
             </ul>
