@@ -142,13 +142,14 @@
         // Database connection
         include('admin/includes/dbc.php');
         session_start();
+        date_default_timezone_set('Asia/Colombo'); // Set your timezone
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $employee_ID = trim($_POST['employee_ID']);
             $password = trim($_POST['password']);
 
-            // Updated query to also select division
-            $sql = "SELECT employee_ID, username, pwd, role, status, division FROM users WHERE employee_ID = ?";
+            // Updated query to also select division and access period
+            $sql = "SELECT employee_ID, username, pwd, role, status, division, access_start, access_end FROM users WHERE employee_ID = ?";
             $stmt = mysqli_prepare($connect, $sql);
             mysqli_stmt_bind_param($stmt, "s", $employee_ID);
             mysqli_stmt_execute($stmt);
@@ -159,6 +160,18 @@
                     echo '<p class="error">Your account is deactivated. Please contact the administrator.</p>';
                 } else {
                     if (password_verify($password, $user['pwd'])) {
+                        // Access control: Only for user and sub_admin
+                        if (in_array($user['role'], ['user', 'sub_admin'])) {
+                            $now = date('Y-m-d H:i:s');
+                            if (empty($user['access_start']) || empty($user['access_end'])) {
+                                echo '<p class="error">Your access period is not set. Please contact the administrator.</p>';
+                                exit();
+                            }
+                            if ($now < $user['access_start'] || $now > $user['access_end']) {
+                                echo '<p class="error">Your access period is not valid.<br>Allowed: ' . $user['access_start'] . ' to ' . $user['access_end'] . '</p>';
+                                exit();
+                            }
+                        }
                         // Login success: save all important session data
                         $_SESSION['employee_ID'] = $user['employee_ID'];
                         $_SESSION['username'] = $user['username'];
