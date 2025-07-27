@@ -163,7 +163,7 @@
                         $_SESSION['employee_ID'] = $user['employee_ID'];
                         $_SESSION['username'] = $user['username'];
                         $_SESSION['role'] = $user['role'];
-                        $_SESSION['division'] = $user['division']; // 👈 Add division to session
+                        $_SESSION['division'] = $user['division'];
 
                         // Redirect by role
                         if ($user['role'] === 'admin') {
