@@ -81,7 +81,8 @@ $connect->close();
     <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css"
     rel="stylesheet">
-
+    <!-- Add Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         /* General Styling */
         body {
@@ -202,12 +203,12 @@ $connect->close();
 <body>
 
 <div class="d-flex justify-content-center mt-5">
-    <div class="custom-btn-group">
+     <div class="custom-btn-group">
         <a href="add-user.php" class="btn btn-custom btn-add-user">
-            <i class="bi bi-person"></i> Add User
+            <i class="bi bi-person-plus"></i> Add User
         </a>
         <a href="view_user.php" class="btn btn-custom btn-view-user">
-            <i class="bi bi-person"></i> View User
+            <i class="bi bi-people"></i> View Users
         </a>
     </div>
 </div>
