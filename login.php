@@ -148,7 +148,7 @@
             $password = trim($_POST['password']);
 
             // Updated query to also select division
-            $sql = "SELECT employee_ID, username, pwd, role, status, division FROM users WHERE employee_ID = ?";
+            $sql = "SELECT employee_ID, username, pwd, role, status, division, access_start, access_end FROM users WHERE employee_ID = ?";
             $stmt = mysqli_prepare($connect, $sql);
             mysqli_stmt_bind_param($stmt, "s", $employee_ID);
             mysqli_stmt_execute($stmt);
@@ -159,11 +159,20 @@
                     echo '<p class="error">Your account is deactivated. Please contact the administrator.</p>';
                 } else {
                     if (password_verify($password, $user['pwd'])) {
+                        // Check access period
+                        $now = date('Y-m-d H:i:s');
+                        if ($user['access_start'] && $user['access_end']) {
+                            if ($now < $user['access_start'] || $now > $user['access_end']) {
+                                echo '<p class="error">Your access period is not valid.<br>Allowed: ' . $user['access_start'] . ' to ' . $user['access_end'] . '</p>';
+                                exit();
+                            }
+                        }
+
                         // Login success: save all important session data
                         $_SESSION['employee_ID'] = $user['employee_ID'];
                         $_SESSION['username'] = $user['username'];
                         $_SESSION['role'] = $user['role'];
-                        $_SESSION['division'] = $user['division']; // 👈 Add division to session
+                        $_SESSION['division'] = $user['division'];
 
                         // Redirect by role
                         if ($user['role'] === 'admin') {
