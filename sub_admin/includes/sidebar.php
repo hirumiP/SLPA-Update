@@ -22,10 +22,7 @@
                     <div class="sb-nav-link-icon me-2"><i class="fas fa-print"></i></div>
                     <span>Print Item Requests</span>
                 </a>
-                <a class="nav-link d-flex align-items-center" href="addCategory.php">
-                    <div class="sb-nav-link-icon me-2"><i class="fas fa-folder-plus"></i></div>
-                    <span>Setting</span>
-                </a>
+                <!-- Settings tab removed -->
                 <a class="nav-link d-flex align-items-center" href="aboutus.php">
                     <div class="sb-nav-link-icon me-2"><i class="fas fa-info-circle"></i></div>
                     <span>About Us</span>
