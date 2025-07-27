@@ -44,9 +44,12 @@
                 </a>
             </div>
         </div>
-        <div class="sb-sidenav-footer bg-dark text-light">
-            <div class="small">Logged in as:</div>
-            <span class="fw-semibold"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Guest'); ?></span>
+        <div class="sb-sidenav-footer bg-dark text-light d-flex align-items-center">
+            <div class="sb-nav-link-icon me-2"><i class="fas fa-user-circle"></i></div>
+            <div>
+                <div class="small">Logged in as:</div>
+                <span class="fw-semibold"><?php echo htmlspecialchars($_SESSION['username'] ?? 'Guest'); ?></span>
+            </div>
         </div>
     </nav>
 </div>
