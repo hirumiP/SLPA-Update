@@ -7,8 +7,8 @@ if (!isset($_SESSION['employee_ID'])) {
     exit();
 }
 
-include('includes/header.php');
 include('includes/dbc.php'); // Assuming the database connection is handled here
+include('includes/header.php');
 
 // Initialize variables for error and success messages
 $error = '';
