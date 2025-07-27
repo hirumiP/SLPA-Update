@@ -12,6 +12,11 @@
                     <div class="sb-nav-link-icon me-2"><i class="fas fa-user-plus"></i></div>
                     <span>Add User</span>
                 </a>
+                <!-- Access Control Button -->
+                <a class="nav-link d-flex align-items-center" href="access_control.php">
+                    <div class="sb-nav-link-icon me-2"><i class="fas fa-user-shield"></i></div>
+                    <span>Access Control</span>
+                </a>
                 <a class="nav-link d-flex align-items-center" href="add-division.php">
                     <div class="sb-nav-link-icon me-2"><i class="fas fa-map"></i></div>
                     <span>Add Division</span>
