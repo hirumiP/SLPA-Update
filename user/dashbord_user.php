@@ -75,7 +75,9 @@ if ($loggedDivision && $selectedYear && $selectedBudget) {
     <h1 class="mt-4 fw-bold text-primary" style="letter-spacing: 1px;">
         SLPA Budget Management System
         <?php if ($loggedDivision): ?>
-            <small class="text-secondary" style="font-size: 1.6rem;"> - <?= htmlspecialchars($loggedDivision) ?></small>
+            <small class="fw-bold text-primary" style="font-size: 2rem; letter-spacing: 1px;">
+                - <?= htmlspecialchars($loggedDivision) ?>
+            </small>
         <?php endif; ?>
     </h1>
     <ol class="breadcrumb mb-4 bg-white shadow-sm rounded py-2 px-3">

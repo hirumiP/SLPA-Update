@@ -4,7 +4,7 @@ $username = $_SESSION['username'] ?? 'User';
 
 <nav class="sb-topnav navbar navbar-expand navbar-dark bg-primary shadow-sm">
     <!-- Navbar Brand-->
-    <a class="navbar-brand ps-3 fw-bold" href="dashbord_user.php" style="letter-spacing:1px;">
+    <a class="navbar-brand ps-3 fw-bold" href="dashbord.php" style="letter-spacing:1px;">
         <i class="fas fa-ship me-2"></i>SLPA
     </a>
     <!-- Sidebar Toggle-->
