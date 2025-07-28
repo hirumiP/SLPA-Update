@@ -74,7 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 ?>
 
 <div class="container-fluid px-4">
-    <h2 class="text-center mb-4 fw-bold text-primary" style="letter-spacing: 1px;">Item Request For Budget 2025</h2>
+    <h2 class="text-center mb-4 fw-bold text-primary" style="letter-spacing: 1px;">Item Request For Budget</h2>
     <?php if ($successMsg): ?>
         <div class="alert alert-success text-center"><?= $successMsg; ?></div>
     <?php elseif ($errorMsg): ?>
@@ -156,7 +156,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <!-- Reason -->
         <div class="col-md-4">
-            <label for="reason" class="form-label fw-semibold">Reason</label>
+            <label for="reason" class="form-label fw-semibold">New/Replace</label>
             <select id="reason" name="reason" class="form-select">
                 <option value="New">New</option>
                 <option value="Replace">Replace</option>
