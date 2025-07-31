@@ -11,7 +11,8 @@ include(__DIR__ . '/../user/includes/dbc.php');
 
 $loggedDivision = $_SESSION['division'];
 $loggedOrganization = "SRI LANKA PORTS AUTHORITY";
-$selectedYear = isset($_GET['year']) ? $_GET['year'] : date("Y"); // Get year from GET or default to current
+$selectedYear = isset($_GET['year']) ? $_GET['year'] : date("Y");
+$selectedBudget = isset($_GET['budget']) ? $_GET['budget'] : ''; // New budget filter
 
 // Fetch years for dropdown
 $yearQuery = "SELECT DISTINCT year FROM item_requests ORDER BY year DESC";
@@ -21,7 +22,24 @@ while ($row = mysqli_fetch_assoc($yearResult)) {
     $years[] = $row['year'];
 }
 
-// Main data query
+// Fetch budget types for dropdown
+$budgetQuery = "SELECT DISTINCT b.id, b.budget FROM budget b 
+                JOIN item_requests ir ON b.id = ir.budget_id 
+                WHERE ir.division = '$loggedDivision' 
+                ORDER BY b.budget";
+$budgetResult = mysqli_query($connect, $budgetQuery);
+$budgets = [];
+while ($row = mysqli_fetch_assoc($budgetResult)) {
+    $budgets[] = $row;
+}
+
+// Build WHERE clause with budget filter
+$whereClause = "ir.division = '$loggedDivision' AND ir.status = 'Approved' AND ir.year = '$selectedYear'";
+if (!empty($selectedBudget)) {
+    $whereClause .= " AND ir.budget_id = '$selectedBudget'";
+}
+
+// Main data query with budget filter
 $sql = "SELECT 
             i.category_code,
             ir.division, 
@@ -42,7 +60,7 @@ $sql = "SELECT
         LEFT JOIN 
             budget b ON ir.budget_id = b.id
         WHERE
-            ir.division = '$loggedDivision' AND ir.status = 'Approved' AND ir.year = '$selectedYear'
+            $whereClause
         ORDER BY
             i.category_code";
 
@@ -52,6 +70,17 @@ $item_list = [];
 if ($result && mysqli_num_rows($result) > 0) {
     while ($row = mysqli_fetch_assoc($result)) {
         $item_list[] = $row;
+    }
+}
+
+// Get selected budget name for display
+$selectedBudgetName = 'All Budgets';
+if (!empty($selectedBudget)) {
+    foreach ($budgets as $budget) {
+        if ($budget['id'] == $selectedBudget) {
+            $selectedBudgetName = $budget['budget'];
+            break;
+        }
     }
 }
 ?>
@@ -130,40 +159,94 @@ body {
     display: none;
 }
 
+.filter-form {
+    background: #fff;
+    padding: 20px;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #0d2957;
+    min-width: 80px;
+}
+
+.form-select {
+    min-width: 150px;
+}
+
 @media (max-width: 768px) {
     .table th, .table td {
         font-size: 12px;
         padding: 4px 4px;
     }
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filter-group {
+        justify-content: space-between;
+    }
 }
-
 </style>
 
 <div class="container-fluid px-4 mt-4">
     <!-- Organization and Division Details -->
     <div class="text-center mb-3">
         <h4><?php echo $loggedOrganization; ?></h4>
-        <h5>Approved Item Requests - Division: <?php echo $loggedDivision; ?> | Year: <?php echo $selectedYear; ?></h5>
+        <h5>Approved Item Requests - Division: <?php echo $loggedDivision; ?> | Year: <?php echo $selectedYear; ?> | Budget: <?php echo $selectedBudgetName; ?></h5>
     </div>
 
-    <!-- ✅ Year Filter Dropdown -->
-    <form method="GET" class="filter-form no-print mb-3">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <label for="year"><strong>Select Year:</strong></label>
-            <select name="year" id="year" class="form-select w-auto" onchange="this.form.submit()">
-                <?php foreach ($years as $year): ?>
-                    <option value="<?php echo $year; ?>" <?php if ($selectedYear == $year) echo 'selected'; ?>>
-                        <?php echo $year; ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+    <!-- ✅ Enhanced Filter Form -->
+    <form method="GET" class="filter-form no-print mb-4">
+        <div class="filter-controls">
+            <div class="filter-group">
+                <label for="year">Select Year:</label>
+                <select name="year" id="year" class="form-select">
+                    <?php foreach ($years as $year): ?>
+                        <option value="<?php echo $year; ?>" <?php if ($selectedYear == $year) echo 'selected'; ?>>
+                            <?php echo $year; ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="budget">Select Budget:</label>
+                <select name="budget" id="budget" class="form-select">
+                    <option value="">All Budgets</option>
+                    <?php foreach ($budgets as $budget): ?>
+                        <option value="<?php echo $budget['id']; ?>" <?php if ($selectedBudget == $budget['id']) echo 'selected'; ?>>
+                            <?php echo htmlspecialchars($budget['budget']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-funnel"></i> Filter
+            </button>
         </div>
     </form>
 
     <!-- ✅ Print Button -->
     <div class="text-end mb-3 no-print">
-        <button class="btn btn-primary" onclick="window.print()">
-            <i class="bi bi-printer"></i> Print
+        <button class="btn btn-success" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print Report
         </button>
     </div>
 
@@ -194,26 +277,39 @@ body {
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($item_list as $row): ?>
+                <?php 
+                $totalCost = 0;
+                foreach ($item_list as $row): 
+                    $itemTotal = $row['unit_price'] * $row['quantity'];
+                    $totalCost += $itemTotal;
+                ?>
                     <tr>
                         <td></td>
                         <td></td>
-                        <td></td>
+                        <td><?php echo htmlspecialchars($row['budget_name']); ?></td>
                         <td><?php echo $row['quantity']; ?></td>
                         <td><?php echo htmlspecialchars($row['item_name']); ?></td>
-                        <td><?php echo number_format($row['unit_price'] * $row['quantity'], 2); ?></td>
-                        <td></td>
+                        <td><?php echo number_format($itemTotal, 2); ?></td>
+                        <td><?php echo number_format($itemTotal, 2); ?></td>
                         <td><?php echo htmlspecialchars($row['justification']); ?></td>
                         <td><?php echo htmlspecialchars($row['remark']); ?></td>
                     </tr>
                 <?php endforeach; ?>
+                
+                <!-- Total Row -->
+                <tr style="background-color: #f8f9fa; font-weight: bold;">
+                    <td colspan="5" style="text-align: right;">TOTAL:</td>
+                    <td><?php echo number_format($totalCost, 2); ?></td>
+                    <td><?php echo number_format($totalCost, 2); ?></td>
+                    <td colspan="2"></td>
+                </tr>
             </tbody>
         </table>
 
         <!-- ✅ Note and Signature Section (Print Only) -->
-        <div class="print-only" style="margin-top: 10px; flex-direction: column; width: 100%;">
+        <div class="print-only" style="margin-top: 20px; flex-direction: column; width: 100%;">
             <div style="margin-bottom: 60px; font-size: 11px;">
-                <p>Note: [1] Individual forms should be submitted for C.E.P items, Special Works, Plant & Equipment and Vehicles</p>
+                <p><strong>Note:</strong> [1] Individual forms should be submitted for C.E.P items, Special Works, Plant & Equipment and Vehicles</p>
                 <div style="margin-left: 30px;">
                     <p>[2] Cost Centre Code (Location of the Item) should be clearly indicated in Column No.[2] above for each and every item</p>
                     <p>[3] Column No.[3] above is applicable only for continuation Items</p>
@@ -221,23 +317,28 @@ body {
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; width: 100%;">
+            <div style="display: flex; justify-content: space-between; width: 100%; margin-top: 40px;">
                 <div style="text-align: center; width: 30%;">
                     ___________________________<br>
-                    Prepared By
+                    <strong>Prepared By</strong><br>
+                    Date: _______________
                 </div>
                 <div style="text-align: center; width: 30%;">
                     ___________________________<br>
-                    Checked By
+                    <strong>Checked By</strong><br>
+                    Date: _______________
                 </div>
                 <div style="text-align: center; width: 30%;">
                     ___________________________<br>
-                    Head of Division/Section
+                    <strong>Head of Division/Section</strong><br>
+                    Date: _______________
                 </div>
             </div>
         </div>
     <?php else: ?>
-        <p>No approved item requests found for the selected year.</p>
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle"></i> No approved item requests found for the selected filters.
+        </div>
     <?php endif; ?>
 </div>
 
