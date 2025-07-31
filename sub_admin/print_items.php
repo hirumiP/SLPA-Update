@@ -261,6 +261,7 @@ body {
                     <th>Item Name</th>
                     <th>Total Estimated Cost</th>
                     <th>Allocation Required for <?php echo $selectedYear; ?> Rs.</th>
+                    <th>New/Replace</th> <!-- New column added -->
                     <th>Justification Report</th>
                     <th>Remark</th>
                 </tr>
@@ -272,8 +273,9 @@ body {
                     <th>[5]</th>
                     <th>[6]</th>
                     <th>[7]</th>
-                    <th>[8]</th>
-                    <th>[9]</th>
+                    <th>[8]</th> <!-- New column number -->
+                    <th>[9]</th> <!-- Updated column number -->
+                    <th>[10]</th> <!-- Updated column number -->
                 </tr>
             </thead>
             <tbody>
@@ -291,6 +293,7 @@ body {
                         <td><?php echo htmlspecialchars($row['item_name']); ?></td>
                         <td><?php echo number_format($itemTotal, 2); ?></td>
                         <td><?php echo number_format($itemTotal, 2); ?></td>
+                        <td><?php echo htmlspecialchars($row['reason']); ?></td> <!-- New column showing reason -->
                         <td><?php echo htmlspecialchars($row['justification']); ?></td>
                         <td><?php echo htmlspecialchars($row['remark']); ?></td>
                     </tr>
@@ -301,7 +304,7 @@ body {
                     <td colspan="5" style="text-align: right;">TOTAL:</td>
                     <td><?php echo number_format($totalCost, 2); ?></td>
                     <td><?php echo number_format($totalCost, 2); ?></td>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td> <!-- Updated colspan to account for new column -->
                 </tr>
             </tbody>
         </table>
