@@ -177,7 +177,7 @@ body {
                     <th>Qty</th>
                     <th>Item Name</th>
                     <th>Total Estimated Cost</th>
-                    <th>Allocation Required for <?php echo $selectedYear + 1; ?> Rs.</th>
+                    <th>Allocation Required for <?php echo $selectedYear; ?> Rs.</th>
                     <th>Justification Report</th>
                     <th>Remark</th>
                 </tr>
