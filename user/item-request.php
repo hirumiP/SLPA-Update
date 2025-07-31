@@ -171,7 +171,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <!-- Remark -->
         <div class="col-md-12">
-            <label for="remark" class="form-label fw-semibold">Remark</label>
+            <label for="remark" class="form-label fw-semibold">Remark(User ID)</label>
             <input type="text" class="form-control" id="remark" name="remark">
         </div>
 

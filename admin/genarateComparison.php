@@ -15,9 +15,10 @@ if (isset($_POST['generate_report'])) {
     $selected_year2 = $_POST['year2'] ?? null;
     $selected_budget_id2 = $_POST['budget_id2'] ?? null;
 
-    // Budget 1 data
+    // Budget 1 data - Include justification
     $sql1 = "
         SELECT ir.division, ir.item_code, i.name AS item_name, ir.unit_price, ir.quantity,
+               ir.description AS justification,
                (ir.quantity * ir.unit_price) AS total_cost,
                (ir.quantity * ir.unit_price * 1.10) AS estimated_cost
         FROM item_requests ir
@@ -34,6 +35,7 @@ if (isset($_POST['generate_report'])) {
             'item_code' => $row['item_code'],
             'item_name' => $row['item_name'],
             'quantity' => $row['quantity'],
+            'justification' => $row['justification'],
             'total_cost' => $row['total_cost'],
             'estimated_cost' => $row['estimated_cost']
         ];
@@ -41,16 +43,17 @@ if (isset($_POST['generate_report'])) {
         $total_estimated1 += $row['estimated_cost'];
     }
 
-    // Budget 2 data
+    // Budget 2 data - Include justification
     $data2 = []; $total_budget2 = 0; $total_estimated2 = 0; $i = 0;
     if ($selected_year2 && $selected_budget_id2) {
         $sql2 = "
             SELECT ir.division, ir.item_code, i.name AS item_name, ir.unit_price, ir.quantity,
+                   ir.description AS justification,
                    (ir.quantity * ir.unit_price) AS total_cost,
                    (ir.quantity * ir.unit_price * 1.10) AS estimated_cost
             FROM item_requests ir
             LEFT JOIN items i ON ir.item_code = i.item_code
-            WHERE ir.year = '$selected_year2' AND ir.budget_id = '$selected_budget_id2'
+            WHERE ir.year = '$selected_year2' AND ir.budget_id = '$selected_budget_id2' AND ir.status = 'Approved'
             ORDER BY ir.division, i.name
         ";
         $result2 = mysqli_query($connect, $sql2) or die("Query 2 failed: " . mysqli_error($connect));
@@ -61,6 +64,7 @@ if (isset($_POST['generate_report'])) {
                 'item_code' => $row['item_code'],
                 'item_name' => $row['item_name'],
                 'quantity' => $row['quantity'],
+                'justification' => $row['justification'],
                 'total_cost' => $row['total_cost'],
                 'estimated_cost' => $row['estimated_cost']
             ];
@@ -70,110 +74,156 @@ if (isset($_POST['generate_report'])) {
     }
 
     // PDF Generation
-    $pdf = new FPDF('P', 'mm', 'A4');
+    $pdf = new FPDF('L', 'mm', 'A4'); // Changed to Landscape for more space
     $pdf->AddPage();
 
     $pdf->SetFont('Arial', 'B', 15);
-    $pdf->Cell(0, 10, 'SLPA Block Allocation', 0, 1, 'C');
+    $pdf->Cell(0, 10, 'SLPA Block Allocation Comparison', 0, 1, 'C');
     $pdf->Ln(1);
 
     // Determine the budget labels
-$budget_label1 = $selected_budget_id == '1' ? 'First Round' : ($selected_budget_id == '2' ? 'Revised' : '');
-$budget_label2 = $selected_budget_id2 == '1' ? 'First Round' : ($selected_budget_id2 == '2' ? 'Revised' : '');
+    $budget_label1 = $selected_budget_id == '1' ? 'First Round' : ($selected_budget_id == '2' ? 'Revised' : '');
+    $budget_label2 = $selected_budget_id2 == '1' ? 'First Round' : ($selected_budget_id2 == '2' ? 'Revised' : '');
 
-// Prepare the full line of text
-$report_title = " $selected_year - $budget_label1 Budget";
-if ($selected_year2 && $selected_budget_id2) {
-    $report_title .= "  &   $selected_year2 - $budget_label2 Budget";
-}
+    // Prepare the full line of text
+    $report_title = " $selected_year - $budget_label1 Budget";
+    if ($selected_year2 && $selected_budget_id2) {
+        $report_title .= "  vs  $selected_year2 - $budget_label2 Budget";
+    }
 
-// Output the full title in one line
-$pdf->SetFont('Arial', '', 12);
-$pdf->Cell(0, 10, $report_title, 0, 1, 'C');
-
+    // Output the full title in one line
+    $pdf->SetFont('Arial', '', 12);
+    $pdf->Cell(0, 10, $report_title, 0, 1, 'C');
     $pdf->Ln(3);
 
-    // Table headers
+    // Updated table headers with separate columns for each budget
     $widths = [
-        'head_code' => 33,
-        'description' => 53,
-        'qty' => 12,
-        'cost1' => 25,
-        'est_cost1' => 24,
-        'cost2' => 25,
-        'est_cost2' => 24
+        'head_code' => 25,
+        'description' => 40,
+        'qty1' => 15,
+        'justification1' => 35,
+        'cost1' => 20,
+        'est_cost1' => 20,
+        'qty2' => 15,
+        'justification2' => 35,
+        'cost2' => 20,
+        'est_cost2' => 20
     ];
 
-    $pdf->SetFont('Arial', 'B', 8);
+    $pdf->SetFont('Arial', 'B', 7);
     $pdf->SetFillColor(200, 220, 255);
-    $pdf->Cell($widths['head_code'], 7, 'Head of Account Codes', 1, 0, 'C', true);
-    $pdf->Cell($widths['description'], 7, 'Description', 1, 0, 'C', true);
-    $pdf->Cell($widths['qty'], 7, 'Qty', 1, 0, 'C', true);
-    $pdf->Cell($widths['cost1'], 7, "$selected_year - $budget_label1", 1, 0, 'C', true);
-    $pdf->Cell($widths['est_cost1'], 7, "Est. Cost", 1, 0, 'C', true);
-    $pdf->Cell($widths['cost2'], 7, "$selected_year2 - $budget_label2", 1, 0, 'C', true);
-    $pdf->Cell($widths['est_cost2'], 7, "Est. Cost", 1, 1, 'C', true);
+    
+    // First header row
+    $pdf->Cell($widths['head_code'], 14, 'Head Code', 1, 0, 'C', true);
+    $pdf->Cell($widths['description'], 14, 'Item Description', 1, 0, 'C', true);
+    
+    // Budget 1 header group
+    $budget1_width = $widths['qty1'] + $widths['justification1'] + $widths['cost1'] + $widths['est_cost1'];
+    $pdf->Cell($budget1_width, 7, "$selected_year - $budget_label1", 1, 0, 'C', true);
+    
+    // Budget 2 header group (if exists)
+    if ($selected_year2 && $selected_budget_id2) {
+        $budget2_width = $widths['qty2'] + $widths['justification2'] + $widths['cost2'] + $widths['est_cost2'];
+        $pdf->Cell($budget2_width, 7, "$selected_year2 - $budget_label2", 1, 1, 'C', true);
+    } else {
+        $pdf->Ln();
+    }
+    
+    // Second header row - subheadings
+    $pdf->Cell($widths['head_code'], 7, '', 0, 0, 'C');
+    $pdf->Cell($widths['description'], 7, '', 0, 0, 'C');
+    
+    // Budget 1 subheadings
+    $pdf->Cell($widths['qty1'], 7, 'Qty', 1, 0, 'C', true);
+    $pdf->Cell($widths['justification1'], 7, 'Justification', 1, 0, 'C', true);
+    $pdf->Cell($widths['cost1'], 7, 'Cost', 1, 0, 'C', true);
+    $pdf->Cell($widths['est_cost1'], 7, 'Est. Cost', 1, 0, 'C', true);
+    
+    // Budget 2 subheadings (if exists)
+    if ($selected_year2 && $selected_budget_id2) {
+        $pdf->Cell($widths['qty2'], 7, 'Qty', 1, 0, 'C', true);
+        $pdf->Cell($widths['justification2'], 7, 'Justification', 1, 0, 'C', true);
+        $pdf->Cell($widths['cost2'], 7, 'Cost', 1, 0, 'C', true);
+        $pdf->Cell($widths['est_cost2'], 7, 'Est. Cost', 1, 1, 'C', true);
+    } else {
+        $pdf->Ln();
+    }
 
-    $pdf->SetFont('Arial', '', 8);
+    $pdf->SetFont('Arial', '', 7);
     $current_division = '';
-    $merged_rows = [];
-
+    
+    // Create merged data structure to show items side by side
+    $all_items = [];
+    
+    // Add all items from both budgets
     foreach ($data1 as $row) {
-        $merged_rows[] = [
-            'division' => $row['division'],
-            'item_name' => $row['item_name'],
-            'quantity' => $row['quantity'],
-            'cost1' => $row['total_cost'],
-            'est_cost1' => $row['estimated_cost'],
-            'cost2' => '',
-            'est_cost2' => ''
-        ];
+        $key = $row['division'] . '|' . $row['item_name'];
+        $all_items[$key]['division'] = $row['division'];
+        $all_items[$key]['item_name'] = $row['item_name'];
+        $all_items[$key]['budget1'] = $row;
     }
-
+    
     foreach ($data2 as $row) {
-        $merged_rows[] = [
-            'division' => $row['division'],
-            'item_name' => $row['item_name'],
-            'quantity' => $row['quantity'],
-            'cost1' => '',
-            'est_cost1' => '',
-            'cost2' => $row['total_cost'],
-            'est_cost2' => $row['estimated_cost']
-        ];
+        $key = $row['division'] . '|' . $row['item_name'];
+        if (!isset($all_items[$key])) {
+            $all_items[$key]['division'] = $row['division'];
+            $all_items[$key]['item_name'] = $row['item_name'];
+        }
+        $all_items[$key]['budget2'] = $row;
     }
+    
+    // Sort by division and item name
+    ksort($all_items);
 
-    usort($merged_rows, function ($a, $b) {
-        return [$a['division'], $a['item_name']] <=> [$b['division'], $b['item_name']];
-    });
-
-    foreach ($merged_rows as $row) {
-        if ($row['division'] !== $current_division) {
-            $current_division = $row['division'];
-            $pdf->SetFont('Arial', 'B', 9);
+    foreach ($all_items as $item) {
+        // Division header
+        if ($item['division'] !== $current_division) {
+            $current_division = $item['division'];
+            $pdf->SetFont('Arial', 'B', 8);
             $pdf->SetFillColor(230, 230, 230);
-            $pdf->Cell(
-                $widths['head_code'] + $widths['description'] + $widths['qty'],
-                8,
-                utf8_decode(" $current_division"),
-                1, 0, 'L', true
-            );
-            $pdf->Cell($widths['cost1'] + $widths['est_cost1'], 8, '', 1, 0, 'C', true);
-            $pdf->Cell($widths['cost2'] + $widths['est_cost2'], 8, '', 1, 1, 'C', true);
-            $pdf->SetFont('Arial', '', 8);
+            $total_width = array_sum($widths);
+            $pdf->Cell($total_width, 8, utf8_decode(" $current_division"), 1, 1, 'L', true);
+            $pdf->SetFont('Arial', '', 7);
         }
 
-        $pdf->Cell($widths['head_code'], 5, '', 1, 0, 'C');
-        $pdf->Cell($widths['description'], 5, utf8_decode($row['item_name']), 1, 0, 'L');
-        $pdf->Cell($widths['qty'], 5, $row['quantity'], 1, 0, 'C');
-        $pdf->Cell($widths['cost1'], 5, $row['cost1'] ? number_format($row['cost1'], 2) : '', 1, 0, 'R');
-        $pdf->Cell($widths['est_cost1'], 5, $row['est_cost1'] ? number_format($row['est_cost1'], 2) : '', 1, 0, 'R');
-        $pdf->Cell($widths['cost2'], 5, $row['cost2'] ? number_format($row['cost2'], 2) : '', 1, 0, 'R');
-        $pdf->Cell($widths['est_cost2'], 5, $row['est_cost2'] ? number_format($row['est_cost2'], 2) : '', 1, 1, 'R');
+        // Item row
+        $pdf->Cell($widths['head_code'], 10, '', 1, 0, 'C');
+        $pdf->Cell($widths['description'], 10, utf8_decode(substr($item['item_name'], 0, 25)), 1, 0, 'L');
+        
+        // Budget 1 data
+        if (isset($item['budget1'])) {
+            $b1 = $item['budget1'];
+            $pdf->Cell($widths['qty1'], 10, $b1['quantity'], 1, 0, 'C');
+            $pdf->Cell($widths['justification1'], 10, utf8_decode(substr($b1['justification'], 0, 20)), 1, 0, 'L');
+            $pdf->Cell($widths['cost1'], 10, number_format($b1['total_cost'], 0), 1, 0, 'R');
+            $pdf->Cell($widths['est_cost1'], 10, number_format($b1['estimated_cost'], 0), 1, 0, 'R');
+        } else {
+            $pdf->Cell($widths['qty1'], 10, '-', 1, 0, 'C');
+            $pdf->Cell($widths['justification1'], 10, '-', 1, 0, 'C');
+            $pdf->Cell($widths['cost1'], 10, '-', 1, 0, 'C');
+            $pdf->Cell($widths['est_cost1'], 10, '-', 1, 0, 'C');
+        }
+        
+        // Budget 2 data (if exists)
+        if ($selected_year2 && $selected_budget_id2) {
+            if (isset($item['budget2'])) {
+                $b2 = $item['budget2'];
+                $pdf->Cell($widths['qty2'], 10, $b2['quantity'], 1, 0, 'C');
+                $pdf->Cell($widths['justification2'], 10, utf8_decode(substr($b2['justification'], 0, 20)), 1, 0, 'L');
+                $pdf->Cell($widths['cost2'], 10, number_format($b2['total_cost'], 0), 1, 0, 'R');
+                $pdf->Cell($widths['est_cost2'], 10, number_format($b2['estimated_cost'], 0), 1, 1, 'R');
+            } else {
+                $pdf->Cell($widths['qty2'], 10, '-', 1, 0, 'C');
+                $pdf->Cell($widths['justification2'], 10, '-', 1, 0, 'C');
+                $pdf->Cell($widths['cost2'], 10, '-', 1, 0, 'C');
+                $pdf->Cell($widths['est_cost2'], 10, '-', 1, 1, 'C');
+            }
+        } else {
+            $pdf->Ln();
+        }
     }
 
-    $pdf->Ln(8);
-    $pdf->SetFont('Arial', 'B', 10);
-
+    // Remove all the summary section code and just output the PDF
     $pdf->Output();
 }
 ?>
