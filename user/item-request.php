@@ -9,20 +9,7 @@ if (!isset($_SESSION['employee_ID'])) {
 include('includes/header.php');
 include(__DIR__ . '/../user/includes/dbc.php');
 
-// Debugging section
-echo "<div class='alert alert-warning'>";
-echo "<h6>Debug Information:</h6>";
-echo "<p>Current Time: " . date('Y-m-d H:i:s') . "</p>";
 
-// Check what access periods are active
-$debug_query = $connect->query("SELECT * FROM access_control");
-echo "<p>All Access Periods:</p><ul>";
-while ($row = $debug_query->fetch_assoc()) {
-    $now = date('Y-m-d H:i:s');
-    $active = ($now >= $row['access_start'] && $now <= $row['access_end']) ? "ACTIVE" : "INACTIVE";
-    echo "<li>{$row['year']} - {$row['budget']}: {$row['access_start']} to {$row['access_end']} - <strong>$active</strong></li>";
-}
-echo "</ul></div>";
 // Remove this debug section after testing
 
 // Include access control functions

@@ -148,6 +148,39 @@ if ($loggedDivision && $selectedYear && $selectedBudget) {
         </div>
     <?php endif; ?>
 
+    <!-- Additional Debug Section for Current Access Status -->
+    <div class="alert alert-info mb-4">
+        <h6><i class="bi bi-info-circle"></i> Current Access Status:</h6>
+        <?php
+        $current_time = date('Y-m-d H:i:s');
+        $active_periods = $connect->query("SELECT * FROM access_control WHERE '$current_time' BETWEEN access_start AND access_end");
+        
+        if ($active_periods->num_rows > 0) {
+            echo "<p class='text-success mb-2'><strong>✅ Active Access Periods:</strong></p><ul class='mb-0'>";
+            while ($period = $active_periods->fetch_assoc()) {
+                echo "<li class='text-success'>{$period['year']} - {$period['budget']}: " . 
+                     date('M j, Y g:i A', strtotime($period['access_start'])) . " to " . 
+                     date('M j, Y g:i A', strtotime($period['access_end'])) . "</li>";
+            }
+            echo "</ul>";
+        } else {
+            echo "<p class='text-warning mb-2'><strong>⚠️ No Active Access Periods</strong></p>";
+            
+            // Show upcoming periods
+            $upcoming_periods = $connect->query("SELECT * FROM access_control WHERE access_start > '$current_time' ORDER BY access_start ASC LIMIT 3");
+            if ($upcoming_periods->num_rows > 0) {
+                echo "<p class='mb-2'><strong>📅 Upcoming Access Periods:</strong></p><ul class='mb-0'>";
+                while ($period = $upcoming_periods->fetch_assoc()) {
+                    echo "<li class='text-info'>{$period['year']} - {$period['budget']}: " . 
+                         date('M j, Y g:i A', strtotime($period['access_start'])) . " to " . 
+                         date('M j, Y g:i A', strtotime($period['access_end'])) . "</li>";
+                }
+                echo "</ul>";
+            }
+        }
+        ?>
+    </div>
+
     <!-- Pie Chart Section -->
     <?php /* Chart removed as requested
     <?php if (!empty($itemsChartLabels)): ?>
@@ -179,10 +212,17 @@ if ($loggedDivision && $selectedYear && $selectedBudget) {
     .breadcrumb {
         font-size: 1.1rem;
     }
+    .alert ul {
+        padding-left: 20px;
+    }
+    .alert li {
+        margin-bottom: 5px;
+    }
     @media (max-width: 768px) {
         .card-title { font-size: 1rem; }
         .card-body h2 { font-size: 1.3rem; }
         .form-label { font-size: 0.95rem; }
+        .alert h6 { font-size: 1rem; }
     }
 </style>
 
