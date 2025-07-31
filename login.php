@@ -25,6 +25,10 @@
         .form-container p { text-align: center; font-size: 14px; margin-top: 15px; color: #666; }
         .form-container p a { color: #2575fc; text-decoration: none; font-weight: 500; transition: color 0.3s; }
         .form-container p a:hover { color: #6a11cb; text-decoration: underline; }
+        .access-info { background: #e3f2fd; border: 1px solid #2196f3; border-radius: 6px; padding: 10px; margin-top: 15px; font-size: 13px; }
+        .access-info h6 { color: #1976d2; margin-bottom: 5px; font-size: 14px; }
+        .access-info ul { margin: 0; padding-left: 20px; }
+        .access-info li { margin-bottom: 3px; color: #555; }
     </style>
 </head>
 <body>
@@ -55,11 +59,13 @@
         date_default_timezone_set('Asia/Colombo'); // Set your timezone
 
         $error = '';
+        $access_info = '';
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $employee_ID = trim($_POST['employee_ID']);
             $password = trim($_POST['password']);
 
-            $sql = "SELECT employee_ID, username, pwd, role, status, division, access_start, access_end FROM users WHERE employee_ID = ?";
+            $sql = "SELECT employee_ID, username, pwd, role, status, division FROM users WHERE employee_ID = ?";
             $stmt = mysqli_prepare($connect, $sql);
             mysqli_stmt_bind_param($stmt, "s", $employee_ID);
             mysqli_stmt_execute($stmt);
@@ -74,12 +80,43 @@
                     // Access control: Only for user and sub_admin
                     if (in_array($user['role'], ['user', 'sub_admin'])) {
                         $now = date('Y-m-d H:i:s');
-                        if (empty($user['access_start']) || empty($user['access_end'])) {
-                            $error = 'Your access period is not set. Please contact the administrator.';
-                        } elseif ($now < $user['access_start'] || $now > $user['access_end']) {
-                            $error = 'Your access period is not valid.<br>Allowed: ' . $user['access_start'] . ' to ' . $user['access_end'];
+                        
+                        // Check if there are any active access periods
+                        $access_query = mysqli_prepare($connect, 
+                            "SELECT year, budget, access_start, access_end 
+                             FROM access_control 
+                             WHERE ? BETWEEN access_start AND access_end"
+                        );
+                        mysqli_stmt_bind_param($access_query, 's', $now);
+                        mysqli_stmt_execute($access_query);
+                        $access_result = mysqli_stmt_get_result($access_query);
+                        
+                        if (mysqli_num_rows($access_result) == 0) {
+                            // No active access periods - show available periods
+                            $all_periods_query = mysqli_query($connect, 
+                                "SELECT year, budget, access_start, access_end 
+                                 FROM access_control 
+                                 ORDER BY access_start ASC"
+                            );
+                            
+                            if (mysqli_num_rows($all_periods_query) > 0) {
+                                $periods_list = '';
+                                while ($period = mysqli_fetch_assoc($all_periods_query)) {
+                                    $start_date = date('M j, Y g:i A', strtotime($period['access_start']));
+                                    $end_date = date('M j, Y g:i A', strtotime($period['access_end']));
+                                    $periods_list .= "<li>{$period['year']} - {$period['budget']}: $start_date to $end_date</li>";
+                                }
+                                $error = 'No active access periods at this time.';
+                                $access_info = "<div class='access-info'>
+                                    <h6>Available Access Periods:</h6>
+                                    <ul>$periods_list</ul>
+                                </div>";
+                            } else {
+                                $error = 'No access periods configured. Please contact the administrator.';
+                            }
                         }
                     }
+                    
                     // If no error, proceed to login
                     if (empty($error)) {
                         $_SESSION['employee_ID'] = $user['employee_ID'];
@@ -104,6 +141,51 @@
 
             if (!empty($error)) {
                 echo '<div class="error" role="alert">' . $error . '</div>';
+                echo $access_info;
+            }
+        } else {
+            // Show current access periods for information (when page loads)
+            $now = date('Y-m-d H:i:s');
+            $current_periods = mysqli_query($connect, 
+                "SELECT year, budget, access_start, access_end 
+                 FROM access_control 
+                 WHERE '$now' BETWEEN access_start AND access_end
+                 ORDER BY year DESC, budget ASC"
+            );
+            
+            if (mysqli_num_rows($current_periods) > 0) {
+                $periods_list = '';
+                while ($period = mysqli_fetch_assoc($current_periods)) {
+                    $start_date = date('M j, Y g:i A', strtotime($period['access_start']));
+                    $end_date = date('M j, Y g:i A', strtotime($period['access_end']));
+                    $periods_list .= "<li>{$period['year']} - {$period['budget']}: $start_date to $end_date</li>";
+                }
+                echo "<div class='access-info'>
+                    <h6>🟢 Active Access Periods:</h6>
+                    <ul>$periods_list</ul>
+                </div>";
+            } else {
+                // Show upcoming periods
+                $upcoming_periods = mysqli_query($connect, 
+                    "SELECT year, budget, access_start, access_end 
+                     FROM access_control 
+                     WHERE access_start > '$now'
+                     ORDER BY access_start ASC 
+                     LIMIT 3"
+                );
+                
+                if (mysqli_num_rows($upcoming_periods) > 0) {
+                    $periods_list = '';
+                    while ($period = mysqli_fetch_assoc($upcoming_periods)) {
+                        $start_date = date('M j, Y g:i A', strtotime($period['access_start']));
+                        $end_date = date('M j, Y g:i A', strtotime($period['access_end']));
+                        $periods_list .= "<li>{$period['year']} - {$period['budget']}: $start_date to $end_date</li>";
+                    }
+                    echo "<div class='access-info'>
+                        <h6>⏳ Upcoming Access Periods:</h6>
+                        <ul>$periods_list</ul>
+                    </div>";
+                }
             }
         }
         ?>

@@ -9,6 +9,80 @@ if (!isset($_SESSION['employee_ID'])) {
 include('includes/header.php');
 include(__DIR__ . '/../user/includes/dbc.php');
 
+// Debugging section
+echo "<div class='alert alert-warning'>";
+echo "<h6>Debug Information:</h6>";
+echo "<p>Current Time: " . date('Y-m-d H:i:s') . "</p>";
+
+// Check what access periods are active
+$debug_query = $connect->query("SELECT * FROM access_control");
+echo "<p>All Access Periods:</p><ul>";
+while ($row = $debug_query->fetch_assoc()) {
+    $now = date('Y-m-d H:i:s');
+    $active = ($now >= $row['access_start'] && $now <= $row['access_end']) ? "ACTIVE" : "INACTIVE";
+    echo "<li>{$row['year']} - {$row['budget']}: {$row['access_start']} to {$row['access_end']} - <strong>$active</strong></li>";
+}
+echo "</ul></div>";
+// Remove this debug section after testing
+
+// Include access control functions
+function canAccessBudget($connect, $year, $budget_id) {
+    $current_time = date('Y-m-d H:i:s');
+    
+    // Get budget name from budget_id
+    $budget_query = $connect->prepare("SELECT budget FROM budget WHERE id = ?");
+    $budget_query->bind_param('i', $budget_id);
+    $budget_query->execute();
+    $budget_result = $budget_query->get_result()->fetch_assoc();
+    
+    if (!$budget_result) {
+        error_log("Budget ID $budget_id not found");
+        return false;
+    }
+    
+    $budget_name = $budget_result['budget'];
+    
+    // Check if this specific year-budget combination is accessible
+    $access_query = $connect->prepare(
+        "SELECT access_start, access_end FROM access_control 
+         WHERE year = ? AND budget = ?"
+    );
+    $access_query->bind_param('ss', $year, $budget_name);
+    $access_query->execute();
+    $access_result = $access_query->get_result()->fetch_assoc();
+    
+    if (!$access_result) {
+        error_log("No access period found for Year: $year, Budget: $budget_name");
+        return false;
+    }
+    
+    $is_active = ($current_time >= $access_result['access_start'] && 
+                  $current_time <= $access_result['access_end']);
+    
+    // Debug logging
+    error_log("Access Check: Year=$year, Budget=$budget_name, Current=$current_time, Start={$access_result['access_start']}, End={$access_result['access_end']}, Active=" . ($is_active ? 'YES' : 'NO'));
+    
+    return $is_active;
+}
+
+// Get available budget options based on active access periods
+function getAvailableBudgets($connect) {
+    $current_time = date('Y-m-d H:i:s');
+    
+    // Get all active access periods
+    $access_query = $connect->prepare(
+        "SELECT DISTINCT ac.year, ac.budget, b.id as budget_id 
+         FROM access_control ac
+         JOIN budget b ON ac.budget = b.budget
+         WHERE ? BETWEEN ac.access_start AND ac.access_end
+         ORDER BY ac.year ASC, b.budget ASC"
+    );
+    $access_query->bind_param('s', $current_time);
+    $access_query->execute();
+    
+    return $access_query->get_result();
+}
+
 $items = [];
 $categories = [];
 $division = $_SESSION['division'];
@@ -25,6 +99,13 @@ $item_query = "SELECT item_code, name, category_code FROM items";
 $item_result = $connect->query($item_query);
 while ($row = $item_result->fetch_assoc()) {
     $items[] = $row;
+}
+
+// Get available budgets based on access periods
+$available_budgets = getAvailableBudgets($connect);
+$budget_options = [];
+while ($row = $available_budgets->fetch_assoc()) {
+    $budget_options[] = $row;
 }
 
 // Handle form submission
@@ -45,41 +126,81 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!$category_code || !$budget_id || !$item_code || !$unit_price || !$quantity || !$year || !$justification) {
         $errorMsg = "Please fill in all required fields.";
     } else {
-        $stmt = $connect->prepare("INSERT INTO item_requests 
-            (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-        $stmt->bind_param(
-            "ssisssiss",
-            $division,
-            $item_code,
-            $year,
-            $justification,
-            $reason,
-            $unit_price,
-            $quantity,
-            $budget_id,
-            $remark
-        );
-
-        if ($stmt->execute()) {
-            $successMsg = "Item request successfully added!";
+        // Check if user can access this specific year-budget combination
+        if (!canAccessBudget($connect, $year, $budget_id)) {
+            $errorMsg = "Access denied for the selected year and budget combination. Please check the access periods.";
         } else {
-            $errorMsg = "Error: " . $stmt->error;
-        }
+            $stmt = $connect->prepare("INSERT INTO item_requests 
+                (division, item_code, year, description, reason, unit_price, quantity, budget_id, remark)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        $stmt->close();
+            $stmt->bind_param(
+                "ssisssiss",
+                $division,
+                $item_code,
+                $year,
+                $justification,
+                $reason,
+                $unit_price,
+                $quantity,
+                $budget_id,
+                $remark
+            );
+
+            if ($stmt->execute()) {
+                $successMsg = "Item request successfully added!";
+            } else {
+                $errorMsg = "Error: " . $stmt->error;
+            }
+
+            $stmt->close();
+        }
     }
 }
+
+// Get active access periods to display to user
+$current_time = date('Y-m-d H:i:s');
+$access_periods_query = $connect->prepare(
+    "SELECT year, budget, access_start, access_end FROM access_control 
+     WHERE ? BETWEEN access_start AND access_end 
+     ORDER BY year DESC, budget ASC"
+);
+$access_periods_query->bind_param('s', $current_time);
+$access_periods_query->execute();
+$active_periods = $access_periods_query->get_result();
 ?>
 
 <div class="container-fluid px-4">
     <h2 class="text-center mb-4 fw-bold text-primary" style="letter-spacing: 1px;">Item Request For Budget</h2>
+    
+    <!-- Show active access periods -->
+    <?php if ($active_periods->num_rows > 0): ?>
+        <div class="alert alert-info mb-4">
+            <h6><i class="bi bi-clock me-2"></i>Active Access Periods</h6>
+            <ul class="mb-0 small">
+                <?php 
+                $active_periods->data_seek(0); // Reset pointer
+                while ($period = $active_periods->fetch_assoc()): ?>
+                    <li><strong><?= $period['year'] ?> - <?= $period['budget'] ?></strong>: 
+                        <?= date('M j, Y g:i A', strtotime($period['access_start'])) ?> to 
+                        <?= date('M j, Y g:i A', strtotime($period['access_end'])) ?>
+                    </li>
+                <?php endwhile; ?>
+            </ul>
+        </div>
+    <?php else: ?>
+        <div class="alert alert-warning mb-4">
+            <h6><i class="bi bi-exclamation-triangle me-2"></i>No Active Access Periods</h6>
+            <p class="mb-0">The system is currently not accepting requests. Please contact your administrator.</p>
+        </div>
+    <?php endif; ?>
+    
     <?php if ($successMsg): ?>
         <div class="alert alert-success text-center"><?= $successMsg; ?></div>
     <?php elseif ($errorMsg): ?>
         <div class="alert alert-danger text-center"><?= $errorMsg; ?></div>
     <?php endif; ?>
+    
     <form method="POST" action="" class="row g-4 shadow-lg p-5 border border-2 border-primary rounded-4 bg-light">
 
         <!-- Division -->
@@ -118,7 +239,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Year -->
         <div class="col-md-4">
             <label for="year" class="form-label fw-semibold">Year <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" id="year" name="year" value="<?= date('Y'); ?>" min="2020" max="2100" required>
+            <select id="year" name="year" class="form-select" required>
+                <option value="" selected disabled>Select Year</option>
+                <?php 
+                // Get unique years from active access periods
+                $unique_years = array_unique(array_column($budget_options, 'year'));
+                sort($unique_years);
+                foreach ($unique_years as $year): ?>
+                    <option value="<?= $year ?>"><?= $year ?></option>
+                <?php endforeach; ?>
+            </select>
         </div>
 
         <!-- Budget -->
@@ -126,13 +256,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <label for="budget" class="form-label fw-semibold">Budget <span class="text-danger">*</span></label>
             <select id="budget" name="budget" class="form-select" required>
                 <option value="" selected disabled>Choose Budget</option>
-                <?php
-                $budget_sql = "SELECT * FROM budget";
-                $budget_result = $connect->query($budget_sql);
-                while ($row = $budget_result->fetch_assoc()) {
-                    echo "<option value='{$row['id']}' data-name='" . strtolower($row['budget']) . "'>{$row['budget']}</option>";
-                }
-                ?>
+                <?php foreach ($budget_options as $budget): ?>
+                    <option value="<?= $budget['budget_id'] ?>" 
+                            data-year="<?= $budget['year'] ?>" 
+                            data-name="<?= strtolower($budget['budget']) ?>">
+                        <?= $budget['budget'] ?>
+                    </option>
+                <?php endforeach; ?>
             </select>
         </div>
 
@@ -220,15 +350,60 @@ document.addEventListener("DOMContentLoaded", function () {
     const quantityInput = document.getElementById("quantity");
     const totalCostInput = document.getElementById("total_cost");
     const budgetSelect = document.getElementById("budget");
-    const yearInput = document.getElementById("year");
-
+    const yearSelect = document.getElementById("year");
+    const form = document.querySelector("form");
+    
+    // Available budget options from PHP
+    const availableBudgets = <?= json_encode($budget_options) ?>;
+    
     // Filter items based on selected category
     categorySelect.addEventListener("change", () => {
         const selectedCategory = categorySelect.value;
         Array.from(itemSelect.options).forEach(option => {
             option.hidden = option.getAttribute("data-category") !== selectedCategory && option.value !== "";
         });
-        itemSelect.value = ""; // Reset item selection
+        itemSelect.value = "";
+    });
+
+    // Filter budgets based on selected year
+    yearSelect.addEventListener("change", () => {
+        const selectedYear = yearSelect.value;
+        
+        Array.from(budgetSelect.options).forEach(option => {
+            if (option.value === "") {
+                option.hidden = false;
+            } else {
+                const optionYear = option.getAttribute("data-year");
+                option.hidden = optionYear !== selectedYear;
+            }
+        });
+        
+        budgetSelect.value = "";
+    });
+
+    // Validate form submission
+    form.addEventListener("submit", function(e) {
+        const selectedYear = yearSelect.value;
+        const selectedBudgetId = budgetSelect.value;
+        
+        // Check if the selected combination is in available budgets
+        const isValid = availableBudgets.some(budget => 
+            budget.year === selectedYear && budget.budget_id === selectedBudgetId
+        );
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert("The selected year-budget combination is not currently accessible. Please check the active access periods.");
+            return false;
+        }
+        
+        // Additional validation for required fields
+        if (!categorySelect.value || !itemSelect.value || !yearSelect.value || 
+            !budgetSelect.value || !unitPriceInput.value || !quantityInput.value) {
+            e.preventDefault();
+            alert("Please fill in all required fields.");
+            return false;
+        }
     });
 
     // Fetch unit price based on selected item
@@ -240,22 +415,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(data => {
                     unitPriceInput.value = data.price || '';
                     updateTotalCost();
+                })
+                .catch(err => {
+                    console.log('Price fetch failed:', err);
                 });
         } else {
             unitPriceInput.value = '';
             updateTotalCost();
-        }
-    });
-
-    // Update year based on selected budget
-    budgetSelect.addEventListener("change", () => {
-        const selected = budgetSelect.options[budgetSelect.selectedIndex];
-        const name = selected ? selected.getAttribute('data-name') : '';
-        const currentYear = new Date().getFullYear();
-        if (name && name.includes("next year")) {
-            yearInput.value = currentYear + 1;
-        } else if (name && name.includes("revised")) {
-            yearInput.value = currentYear;
         }
     });
 
@@ -268,5 +434,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     unitPriceInput.addEventListener("input", updateTotalCost);
     quantityInput.addEventListener("input", updateTotalCost);
+    
+    // Initialize form - hide all budget options initially
+    Array.from(budgetSelect.options).forEach(option => {
+        if (option.value !== "") {
+            option.hidden = true;
+        }
+    });
 });
 </script>
