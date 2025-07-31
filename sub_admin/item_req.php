@@ -43,10 +43,17 @@ $result = mysqli_query($connect, $sql);
     }
 }
 .bg-light-red {
-    background-color: #f8d7da !important;
+    background-color: #f8d7da !important; /* Light red for pending items */
 }
 .bg-light-green {
-    background-color: #d4edda !important;
+    background-color: #d4edda !important; /* Light green for approved items */
+}
+.bg-light-gray {
+    background-color: #f8f9fa !important; /* Light gray - we'll change this */
+}
+.bg-rejected-red {
+    background-color: #f5c2c7 !important; /* Darker red for rejected items */
+    border-left: 4px solid #dc3545 !important; /* Red border accent */
 }
 .table th, .table td {
     border: 1px solid #dee2e6 !important;
@@ -66,7 +73,7 @@ $result = mysqli_query($connect, $sql);
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(13,41,87,0.07);
 }
-.badge.bg-success, .badge.bg-warning {
+.badge.bg-success, .badge.bg-warning, .badge.bg-danger {
     font-size: 1em;
     padding: 0.5em 1em;
     border-radius: 0.5em;
@@ -123,9 +130,14 @@ $result = mysqli_query($connect, $sql);
             <i class="bi bi-check-circle-fill"></i> Item request approved successfully.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    <?php elseif (isset($_GET['msg']) && $_GET['msg'] == 'deleted'): ?>
+    <?php elseif (isset($_GET['msg']) && $_GET['msg'] == 'rejected'): ?>
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-x-circle-fill"></i> Item request rejected successfully.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php elseif (isset($_GET['msg']) && $_GET['msg'] == 'error'): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-x-circle-fill"></i> Item request deleted successfully.
+            <i class="bi bi-exclamation-triangle-fill"></i> An error occurred while processing the request.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
@@ -150,7 +162,14 @@ $result = mysqli_query($connect, $sql);
                 <?php
                 if ($result && mysqli_num_rows($result) > 0) {
                     while ($row = mysqli_fetch_assoc($result)) {
-                        $rowClass = ($row['status'] == 'Approved') ? 'bg-light-green' : 'bg-light-red';
+                        // Set row class based on status
+                        if ($row['status'] == 'Approved') {
+                            $rowClass = 'bg-light-green';
+                        } elseif ($row['status'] == 'Rejected') {
+                            $rowClass = 'bg-rejected-red';
+                        } else {
+                            $rowClass = 'bg-light-red';
+                        }
                         ?>
                         <tr class="<?= $rowClass; ?>">
                             <td><?= htmlspecialchars($row['item_name']); ?></td>
@@ -164,19 +183,21 @@ $result = mysqli_query($connect, $sql);
                             <td>
                                 <?php if ($row['status'] == 'Approved'): ?>
                                     <span class="badge bg-success"><i class="bi bi-check-circle"></i> Approved</span>
+                                <?php elseif ($row['status'] == 'Rejected'): ?>
+                                    <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Rejected</span>
                                 <?php else: ?>
                                     <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Pending</span>
                                 <?php endif; ?>
                             </td>
                             <td class="no-print">
-                                <?php if ($row['status'] !== 'Approved'): ?>
+                                <?php if ($row['status'] == 'Pending'): ?>
                                     <button 
                                         class="btn btn-primary btn-sm"
                                         data-bs-toggle="modal"
                                         data-bs-target="#approveModal"
                                         onclick="fillForm('<?= $row['request_id']; ?>', '<?= $row['unit_price']; ?>', '<?= $row['quantity']; ?>')"
                                     >
-                                        <i class="bi bi-check2-square"></i> Approve
+                                        <i class="bi bi-gear"></i> Process
                                     </button>
                                 <?php else: ?>
                                     <span class="text-muted">—</span>
@@ -200,7 +221,7 @@ $result = mysqli_query($connect, $sql);
     <div class="modal-content">
       <form action="process_item_request.php" method="POST">
           <div class="modal-header">
-              <h5 class="modal-title" id="approveModalLabel"><i class="bi bi-check2-square"></i> Approve Item Request</h5>
+              <h5 class="modal-title" id="approveModalLabel"><i class="bi bi-check2-square"></i> Process Item Request</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -213,13 +234,17 @@ $result = mysqli_query($connect, $sql);
                   <label for="quantity" class="form-label">Quantity</label>
                   <input type="text" class="form-control" id="quantity" name="quantity" required>
               </div>
+              <div class="mb-3">
+                  <label for="remark" class="form-label">Remark</label>
+                  <textarea class="form-control" id="remark" name="remark" rows="3" placeholder="Add remarks (optional)"></textarea>
+              </div>
           </div>
           <div class="modal-footer">
               <button type="submit" name="approve" class="btn btn-success">
                   <i class="bi bi-check-circle"></i> Approve Item Request
               </button>
-              <button type="submit" name="delete" class="btn btn-danger">
-                  <i class="bi bi-trash"></i> Delete Item Request
+              <button type="submit" name="reject" class="btn btn-danger">
+                  <i class="bi bi-x-circle"></i> Reject Item Request
               </button>
           </div>
       </form>

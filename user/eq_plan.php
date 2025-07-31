@@ -72,7 +72,7 @@ $result = mysqli_stmt_get_result($stmt);
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(13,41,87,0.07);
 }
-.badge.bg-success, .badge.bg-warning {
+.badge.bg-success, .badge.bg-warning, .badge.bg-danger {
     font-size: 1em;
     padding: 0.5em 1em;
     border-radius: 0.5em;
@@ -126,6 +126,8 @@ $result = mysqli_stmt_get_result($stmt);
                             <td>";
                         if ($row['status'] === 'Approved') {
                             echo "<span class='badge bg-success'><i class='bi bi-check-circle'></i> Approved</span>";
+                        } elseif ($row['status'] === 'Rejected') {
+                            echo "<span class='badge bg-danger'><i class='bi bi-x-circle'></i> Rejected</span>";
                         } else {
                             echo "<span class='badge bg-warning text-dark'><i class='bi bi-hourglass-split'></i> Pending</span>";
                         }
