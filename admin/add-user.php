@@ -19,10 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Retrieve and sanitize input data
     $employeeNo = $connect->real_escape_string($_POST['employeeNo']);
     $userName = $connect->real_escape_string($_POST['userName']);
-    $division = $connect->real_escape_string($_POST['division']); // Ensure division is included
+    $division = $connect->real_escape_string($_POST['division']);
     $email = $connect->real_escape_string($_POST['email']);
     $userCategory = $connect->real_escape_string($_POST['userCategory']);
-    $password = password_hash($connect->real_escape_string($_POST['password']), PASSWORD_BCRYPT); // Secure password hashing
+    $password = password_hash($connect->real_escape_string($_POST['password']), PASSWORD_BCRYPT);
 
     // Step 1: Check if employee exists in employee_details
     $employeeCheckQuery = "SELECT * FROM employee_details WHERE employee_no = '$employeeNo'";
@@ -33,12 +33,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $updateEmailQuery = "UPDATE employee_details SET email = '$email' WHERE employee_no = '$employeeNo'";
 
         if ($connect->query($updateEmailQuery) === TRUE) {
-            // Step 3: Insert new user into the 'users' table
-            $sql = "INSERT INTO users (employee_ID, username, pwd, role, division)
-                    VALUES ('$employeeNo', '$userName', '$password', '$userCategory', '$division')";
+            // Step 3: Get current access period for non-admin users
+            $access_start = null;
+            $access_end = null;
+            
+            if (in_array($userCategory, ['user', 'sub_admin'])) {
+                // Get current access period from existing users or access_control table
+                $accessQuery = "SELECT access_start, access_end FROM users 
+                               WHERE role IN ('user', 'sub_admin') 
+                               AND access_start IS NOT NULL 
+                               AND access_end IS NOT NULL 
+                               ORDER BY created_at DESC 
+                               LIMIT 1";
+                $accessResult = $connect->query($accessQuery);
+                
+                if ($accessResult && $accessResult->num_rows > 0) {
+                    $accessRow = $accessResult->fetch_assoc();
+                    $access_start = $accessRow['access_start'];
+                    $access_end = $accessRow['access_end'];
+                }
+            }
+            
+            // Step 4: Insert new user into the 'users' table with access period
+            if ($access_start && $access_end) {
+                $sql = "INSERT INTO users (employee_ID, username, pwd, role, division, access_start, access_end)
+                        VALUES ('$employeeNo', '$userName', '$password', '$userCategory', '$division', '$access_start', '$access_end')";
+            } else {
+                $sql = "INSERT INTO users (employee_ID, username, pwd, role, division)
+                        VALUES ('$employeeNo', '$userName', '$password', '$userCategory', '$division')";
+            }
 
             if ($connect->query($sql) === TRUE) {
-                $success = "User and email added successfully!";
+                if ($access_start && $access_end) {
+                    $success = "User added successfully with current access period!<br>Access: " . date('M d, Y H:i', strtotime($access_start)) . " to " . date('M d, Y H:i', strtotime($access_end));
+                } else {
+                    $success = "User added successfully!";
+                }
             } else {
                 $error = "Error: " . $connect->error;
             }
