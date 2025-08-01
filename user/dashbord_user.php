@@ -119,25 +119,40 @@ if ($loggedDivision && $selectedYear && $selectedBudget) {
     <?php if ($selectedYear && $selectedBudget): ?>
         <div class="row g-4 mb-4">
             <div class="col-md-4">
-                <div class="card text-white shadow-sm h-100" style="background: linear-gradient(135deg, #003366 70%, #00509e 100%);">
-                    <div class="card-body text-center">
-                        <div class="mb-2"><i class="bi bi-clipboard-data" style="font-size: 2rem;"></i></div>
-                        <h5 class="card-title">Total Requests</h5>
-                        <h2 class="fw-bold"><?= $total_requests ?></h2>
+                <a href="eq_plan.php?year=<?= urlencode($selectedYear) ?>&budget=<?= urlencode($selectedBudget) ?>" 
+                   class="text-decoration-none">
+                    <div class="card text-white shadow-sm h-100 card-hover" 
+                         style="background: linear-gradient(135deg, #003366 70%, #00509e 100%);">
+                        <div class="card-body text-center">
+                            <div class="mb-2"><i class="bi bi-clipboard-data" style="font-size: 2rem;"></i></div>
+                            <h5 class="card-title">Total Requests</h5>
+                            <h2 class="fw-bold"><?= $total_requests ?></h2>
+                            <small class="opacity-75">
+                                <i class="bi bi-arrow-right-circle me-1"></i>View Details
+                            </small>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
             <div class="col-md-4">
-                <div class="card text-white shadow-sm h-100" style="background: linear-gradient(135deg, #00509e 70%, #0074d9 100%);">
-                    <div class="card-body text-center">
-                        <div class="mb-2"><i class="bi bi-box-seam" style="font-size: 2rem;"></i></div>
-                        <h5 class="card-title">Total Items Requested</h5>
-                        <h2 class="fw-bold"><?= $total_items ?></h2>
+                <a href="eq_plan.php?year=<?= urlencode($selectedYear) ?>&budget=<?= urlencode($selectedBudget) ?>" 
+                   class="text-decoration-none">
+                    <div class="card text-white shadow-sm h-100 card-hover" 
+                         style="background: linear-gradient(135deg, #00509e 70%, #0074d9 100%);">
+                        <div class="card-body text-center">
+                            <div class="mb-2"><i class="bi bi-box-seam" style="font-size: 2rem;"></i></div>
+                            <h5 class="card-title">Total Items Requested</h5>
+                            <h2 class="fw-bold"><?= $total_items ?></h2>
+                            <small class="opacity-75">
+                                <i class="bi bi-arrow-right-circle me-1"></i>View Details
+                            </small>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
             <div class="col-md-4">
-                <div class="card text-white shadow-sm h-100" style="background: linear-gradient(135deg, #0074d9 70%, #00b8d9 100%);">
+                <div class="card text-white shadow-sm h-100" 
+                     style="background: linear-gradient(135deg, #0074d9 70%, #00b8d9 100%);">
                     <div class="card-body text-center">
                         <div class="mb-2"><i class="bi bi-cash-coin" style="font-size: 2rem;"></i></div>
                         <h5 class="card-title">Total Budget (LKR)</h5>
